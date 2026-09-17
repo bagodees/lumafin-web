@@ -9,7 +9,7 @@ import type { ApiClient } from 'jellyfin-apiclient';
 
 import { getLatestMediaQuery } from 'apps/legacy/features/libraries/api/useLatestMedia';
 import cardBuilder from 'components/cardbuilder/cardBuilder';
-import { getBackdropShape, getPortraitShape, getSquareShape } from 'components/cardbuilder/utils/shape';
+import { getBackdropShape } from 'components/cardbuilder/utils/shape';
 import layoutManager from 'components/layoutManager';
 import { appRouter } from 'components/router/appRouter';
 import globalize from 'lib/globalize';
@@ -70,19 +70,14 @@ function getLatestItemsHtmlFn(
 ) {
     return function (items: BaseItemDto[]) {
         const cardLayout = false;
-        let shape;
-        if (itemType === 'Channel' || viewType === 'movies' || viewType === 'books' || viewType === 'tvshows') {
-            shape = getPortraitShape(enableOverflow);
-        } else if (viewType === 'music' || viewType === 'homevideos') {
-            shape = getSquareShape(enableOverflow);
-        } else {
-            shape = getBackdropShape(enableOverflow);
-        }
+        // LumaFin: always use uniform 16:9 landscape cards instead of per-type
+        // portrait posters/squares.
+        const shape = getBackdropShape(enableOverflow);
 
         return cardBuilder.getCardsHtml({
             items: items,
             shape: shape,
-            preferThumb: viewType !== 'movies' && viewType !== 'tvshows' && itemType !== 'Channel' && viewType !== 'music' ? 'auto' : null,
+            preferThumb: true,
             preferParentPoster: true,
             showUnplayedIndicator: false,
             showChildCountIndicator: true,

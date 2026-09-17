@@ -40,7 +40,7 @@ import {
     resolveCardImageContainerCssClasses,
     resolveMixedShapeByAspectRatio
 } from './utils/builder';
-import { getBackdropShape, getPortraitShape, getSquareShape } from './utils/shape';
+import { getBackdropShape } from './utils/shape';
 import { getCardImageUrl } from './utils/url';
 
 const enableFocusTransform = !browser.slow && !browser.edge;
@@ -83,28 +83,14 @@ export function setCardData(items, options) {
     const primaryImageAspectRatio = imageLoader.getPrimaryImageAspectRatio(items);
 
     if (['auto', 'autohome', 'autooverflow', 'autoVertical'].includes(options.shape)) {
+        // LumaFin: always use uniform 16:9 landscape cards instead of deriving
+        // portrait/square/banner shapes from the item's primary image aspect ratio.
         const requestedShape = options.shape;
-        options.shape = null;
-
-        if (primaryImageAspectRatio) {
-            if (primaryImageAspectRatio >= 3) {
-                options.shape = 'banner';
-                options.coverImage = true;
-            } else if (primaryImageAspectRatio >= 1.33) {
-                options.shape = getBackdropShape(requestedShape === 'autooverflow');
-            } else if (primaryImageAspectRatio > 0.8) {
-                options.shape = getSquareShape(requestedShape === 'autooverflow');
-            } else {
-                options.shape = getPortraitShape(requestedShape === 'autooverflow');
-            }
-        }
-
-        if (!options.shape) {
-            options.shape = options.defaultShape || getSquareShape(requestedShape === 'autooverflow');
-        }
+        options.shape = getBackdropShape(requestedShape === 'autooverflow');
+        options.coverImage = true;
     }
 
-    if (options.preferThumb === 'auto') {
+    if (options.preferThumb === 'auto' || options.preferThumb === undefined) {
         options.preferThumb = options.shape === 'backdrop' || options.shape === 'overflowBackdrop';
     }
 
