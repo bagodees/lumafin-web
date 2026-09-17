@@ -1,10 +1,10 @@
 {
-    "name": "Jellyfin",
-    "description": "The Free Software Media System",
+    "name": "LumaFin",
+    "description": "LumaFin — a Jellyfin client",
     "lang": "en-US",
-    "short_name": "Jellyfin",
+    "short_name": "LumaFin",
     "start_url": "index.html#/home",
-    "theme_color": "#101010",
+    "theme_color": "#031A6B",
     "background_color": "#101010",
     "display": "standalone",
     "icons": [

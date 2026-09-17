@@ -8,10 +8,10 @@ export const DEFAULT_COLOR_SCHEME: ColorSystemOptions = {
     palette: {
         mode: 'dark',
         primary: {
-            main: '#00a4dc'
+            main: '#3C9CE4'
         },
         secondary: {
-            main: '#00a4dc'
+            main: '#C2264B'
         },
         background: {
             default: '#101010',
