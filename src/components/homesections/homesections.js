@@ -7,12 +7,18 @@ import Dashboard from 'utils/dashboard';
 import { queryClient } from 'utils/query/queryClient';
 
 import { loadRecordings } from './sections/activeRecordings';
+import { loadBecauseYouWatched } from './sections/becauseYouWatched';
+import { loadCollections } from './sections/collections';
+import { loadGenres } from './sections/genres';
+import { loadLatestMovies } from './sections/latestMovies';
+import { loadLatestShows } from './sections/latestShows';
 import { loadLibraryButtons } from './sections/libraryButtons';
 import { loadLibraryTiles } from './sections/libraryTiles';
 import { loadLiveTV } from './sections/liveTv';
 import { loadNextUp } from './sections/nextUp';
 import { loadRecentlyAdded } from './sections/recentlyAdded';
 import { loadResume } from './sections/resume';
+import { loadWatchAgain } from './sections/watchAgain';
 
 import 'elements/emby-button/paper-icon-button-light';
 import 'elements/emby-itemscontainer/emby-itemscontainer';
@@ -32,7 +38,9 @@ export function getDefaultSection(index) {
 function getAllSectionsToShow(userSettings) {
     const sections = [];
     for (let i = 0, length = MAX_SECTIONS; i < length; i++) {
-        let section = userSettings.get('homesection' + i) || getDefaultSection(i);
+        // LumaFin: keep home section layout local-only so it can't be silently
+        // reverted by a server-synced "shared display preferences" refresh.
+        let section = userSettings.get('homesection' + i, false) || getDefaultSection(i);
         if (section === 'folders') {
             section = getDefaultSection(0);
         }
@@ -168,6 +176,23 @@ function loadSection(page, apiClient, user, userSettings, userViews, section, in
             break;
         case HomeSectionType.SmallLibraryTiles:
             loadLibraryTiles(elem, userViews, options);
+            break;
+        case HomeSectionType.LatestMovies:
+            loadLatestMovies(elem, apiClient, options);
+            break;
+        case HomeSectionType.LatestShows:
+            loadLatestShows(elem, apiClient, options);
+            break;
+        case HomeSectionType.BecauseYouWatched:
+            return loadBecauseYouWatched(elem, apiClient, options);
+        case HomeSectionType.WatchAgain:
+            loadWatchAgain(elem, apiClient, options);
+            break;
+        case HomeSectionType.Collections:
+            loadCollections(elem, apiClient, userViews, options);
+            break;
+        case HomeSectionType.Genres:
+            loadGenres(elem, apiClient, options);
             break;
         default:
             elem.innerHTML = '';

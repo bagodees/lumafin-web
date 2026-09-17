@@ -329,7 +329,7 @@ function updateHomeSectionValues(context, userSettings) {
 
         const option = select.querySelector(`option[value="${defaultValue}"]`) || select.querySelector('option[value=""]');
 
-        const userValue = userSettings.get(`homesection${i - 1}`);
+        const userValue = userSettings.get(`homesection${i - 1}`, false);
 
         if (option) option.value = '';
 
@@ -507,16 +507,19 @@ async function saveUser(context, user, userSettingsInstance, apiClient) {
 
     userSettingsInstance.set('tvhome', context.querySelector('.selectTVHomeScreen').value);
 
-    userSettingsInstance.set('homesection0', context.querySelector('#selectHomeSection1').value);
-    userSettingsInstance.set('homesection1', context.querySelector('#selectHomeSection2').value);
-    userSettingsInstance.set('homesection2', context.querySelector('#selectHomeSection3').value);
-    userSettingsInstance.set('homesection3', context.querySelector('#selectHomeSection4').value);
-    userSettingsInstance.set('homesection4', context.querySelector('#selectHomeSection5').value);
-    userSettingsInstance.set('homesection5', context.querySelector('#selectHomeSection6').value);
-    userSettingsInstance.set('homesection6', context.querySelector('#selectHomeSection7').value);
-    userSettingsInstance.set('homesection7', context.querySelector('#selectHomeSection8').value);
-    userSettingsInstance.set('homesection8', context.querySelector('#selectHomeSection9').value);
-    userSettingsInstance.set('homesection9', context.querySelector('#selectHomeSection10').value);
+    // LumaFin: save home section layout local-only (see getAllSectionsToShow
+    // in homesections.js) so it can't be silently reverted by a server-synced
+    // "shared display preferences" refresh.
+    userSettingsInstance.set('homesection0', context.querySelector('#selectHomeSection1').value, false);
+    userSettingsInstance.set('homesection1', context.querySelector('#selectHomeSection2').value, false);
+    userSettingsInstance.set('homesection2', context.querySelector('#selectHomeSection3').value, false);
+    userSettingsInstance.set('homesection3', context.querySelector('#selectHomeSection4').value, false);
+    userSettingsInstance.set('homesection4', context.querySelector('#selectHomeSection5').value, false);
+    userSettingsInstance.set('homesection5', context.querySelector('#selectHomeSection6').value, false);
+    userSettingsInstance.set('homesection6', context.querySelector('#selectHomeSection7').value, false);
+    userSettingsInstance.set('homesection7', context.querySelector('#selectHomeSection8').value, false);
+    userSettingsInstance.set('homesection8', context.querySelector('#selectHomeSection9').value, false);
+    userSettingsInstance.set('homesection9', context.querySelector('#selectHomeSection10').value, false);
 
     const selectLandings = context.querySelectorAll('.selectLanding');
     for (i = 0, length = selectLandings.length; i < length; i++) {
