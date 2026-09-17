@@ -7,6 +7,7 @@ import LinearProgress, {
 import FiberSmartRecordIcon from '@mui/icons-material/FiberSmartRecord';
 import FiberManualRecordIcon from '@mui/icons-material/FiberManualRecord';
 import CheckIcon from '@mui/icons-material/Check';
+import StarIcon from '@mui/icons-material/Star';
 import VideocamIcon from '@mui/icons-material/Videocam';
 import FolderIcon from '@mui/icons-material/Folder';
 import PhotoAlbumIcon from '@mui/icons-material/PhotoAlbum';
@@ -151,6 +152,41 @@ const useIndicator = (item: ItemDto) => {
         return null;
     };
 
+    const getRatingIndicator = () => {
+        const criticRating = item.CriticRating;
+        const communityRating = item.CommunityRating;
+
+        if (typeof criticRating !== 'number' && typeof communityRating !== 'number') {
+            return null;
+        }
+
+        return (
+            <Box className='cardRatingIndicators'>
+                {typeof criticRating === 'number' && (
+                    <Box
+                        className={classNames(
+                            'cardCriticRatingIndicator',
+                            criticRating >= 60 ?
+                                'cardCriticRatingIndicator-fresh' :
+                                'cardCriticRatingIndicator-rotten'
+                        )}
+                    >
+                        {criticRating}%
+                    </Box>
+                )}
+                {typeof communityRating === 'number' && (
+                    <Box className='cardCommunityRatingIndicator'>
+                        <StarIcon
+                            className='cardCommunityRatingIndicatorIcon'
+                            fontSize='inherit'
+                        />
+                        {communityRating.toFixed(1)}
+                    </Box>
+                )}
+            </Box>
+        );
+    };
+
     const getPlayedIndicator = () => {
         if (enablePlayedIndicator(item)) {
             const userData = item.UserData;
@@ -262,7 +298,8 @@ const useIndicator = (item: ItemDto) => {
         getTimerIndicator,
         getTypeIndicator,
         getChildCountIndicator,
-        getPlayedIndicator
+        getPlayedIndicator,
+        getRatingIndicator
     };
 };
 

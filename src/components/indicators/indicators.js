@@ -89,6 +89,21 @@ export function getPlayedIndicatorHtml(item) {
     return '';
 }
 
+export function getRatingIndicatorsHtml(item) {
+    let html = '';
+
+    if (typeof item.CriticRating === 'number') {
+        const freshClass = item.CriticRating >= 60 ? 'cardCriticRatingIndicator-fresh' : 'cardCriticRatingIndicator-rotten';
+        html += `<div class="cardCriticRatingIndicator ${freshClass}">${item.CriticRating}%</div>`;
+    }
+
+    if (typeof item.CommunityRating === 'number') {
+        html += '<div class="cardCommunityRatingIndicator"><span class="material-icons cardCommunityRatingIndicatorIcon star" aria-hidden="true"></span>' + item.CommunityRating.toFixed(1) + '</div>';
+    }
+
+    return html;
+}
+
 export function getChildCountIndicatorHtml(item, options) {
     const minCount = options?.minCount ? options.minCount : 0;
 
@@ -177,5 +192,6 @@ export default {
     enablePlayedIndicator: enablePlayedIndicator,
     getSyncIndicator: getSyncIndicator,
     getTypeIndicator: getTypeIndicator,
-    getMissingIndicator: getMissingIndicator
+    getMissingIndicator: getMissingIndicator,
+    getRatingIndicatorsHtml: getRatingIndicatorsHtml
 };

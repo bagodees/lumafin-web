@@ -58,6 +58,8 @@ const CardImageContainer: FC<CardImageContainerProps> = ({
                             <RefreshIndicator item={item} />
                         )}
                     </Box>
+
+                    {indicator.getRatingIndicator()}
                 </Box>
             )}
 

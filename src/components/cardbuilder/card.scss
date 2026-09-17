@@ -420,6 +420,60 @@ button::-moz-focus-inner {
     }
 }
 
+.cardRatingIndicators {
+    top: 0.4em;
+    position: absolute;
+    display: flex;
+    flex-direction: column;
+    align-items: flex-start;
+    gap: 0.3em;
+    contain: layout style;
+    z-index: 1;
+
+    [dir="ltr"] & {
+        left: 0.4em;
+    }
+
+    [dir="rtl"] & {
+        right: 0.4em;
+    }
+}
+
+.cardCriticRatingIndicator,
+.cardCommunityRatingIndicator {
+    display: flex;
+    align-items: center;
+    background: rgba(10, 10, 10, 0.85);
+    border-radius: 0.4em;
+    padding: 0.2em 0.5em;
+    font-size: 78%;
+    font-weight: 700;
+    color: #fff;
+    white-space: nowrap;
+    box-shadow: 0 2px 4px rgba(0, 0, 0, 0.4);
+}
+
+.cardCriticRatingIndicator {
+    padding-left: 1.6em;
+    background-repeat: no-repeat;
+    background-position: 0.45em center;
+    background-size: auto 1.1em;
+}
+
+.cardCriticRatingIndicator-fresh {
+    background-image: url(../../assets/img/fresh.svg);
+}
+
+.cardCriticRatingIndicator-rotten {
+    background-image: url(../../assets/img/rotten.svg);
+}
+
+.cardCommunityRatingIndicatorIcon {
+    font-size: 1.1em !important;
+    margin-right: 0.3em;
+    color: #f2b01e;
+}
+
 .cardProgramAttributeIndicators {
     top: 0;
     position: absolute;

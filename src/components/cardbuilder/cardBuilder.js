@@ -907,6 +907,11 @@ function buildCard(index, item, apiClient, options) {
         if (indicatorsHtml) {
             cardImageContainerOpen += '<div class="cardIndicators">' + indicatorsHtml + '</div>';
         }
+
+        const ratingIndicatorsHtml = indicators.getRatingIndicatorsHtml(item);
+        if (ratingIndicatorsHtml) {
+            cardImageContainerOpen += '<div class="cardRatingIndicators">' + ratingIndicatorsHtml + '</div>';
+        }
     }
 
     if (!imgUrl) {
