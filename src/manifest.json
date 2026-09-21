@@ -4,7 +4,7 @@
     "lang": "en-US",
     "short_name": "LumaFin",
     "start_url": "index.html#/home",
-    "theme_color": "#031A6B",
+    "theme_color": "#000000",
     "background_color": "#101010",
     "display": "standalone",
     "icons": [
