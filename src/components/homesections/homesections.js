@@ -9,6 +9,8 @@ import { queryClient } from 'utils/query/queryClient';
 import { loadRecordings } from './sections/activeRecordings';
 import { loadBecauseYouWatched } from './sections/becauseYouWatched';
 import { loadCollections } from './sections/collections';
+import { loadContinueWatchingNextUp } from './sections/continueWatchingNextUp';
+import { loadFavorites } from './sections/favorites';
 import { loadGenres } from './sections/genres';
 import { loadLatestMovies } from './sections/latestMovies';
 import { loadLatestShows } from './sections/latestShows';
@@ -18,6 +20,7 @@ import { loadLiveTV } from './sections/liveTv';
 import { loadNextUp } from './sections/nextUp';
 import { loadRecentlyAdded } from './sections/recentlyAdded';
 import { loadResume } from './sections/resume';
+import { isTypedSection, loadTypedSection } from './sections/typedSections';
 import { loadWatchAgain } from './sections/watchAgain';
 
 import 'elements/emby-button/paper-icon-button-light';
@@ -194,8 +197,18 @@ function loadSection(page, apiClient, user, userSettings, userViews, section, in
         case HomeSectionType.Genres:
             loadGenres(elem, apiClient, options);
             break;
+        case HomeSectionType.ContinueWatchingNextUp:
+            loadContinueWatchingNextUp(elem, apiClient, options);
+            break;
+        case HomeSectionType.Favorites:
+            loadFavorites(elem, apiClient, options);
+            break;
         default:
-            elem.innerHTML = '';
+            if (isTypedSection(section)) {
+                loadTypedSection(section, elem, apiClient, options);
+            } else {
+                elem.innerHTML = '';
+            }
     }
 
     return Promise.resolve();

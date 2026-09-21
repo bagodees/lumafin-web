@@ -9,7 +9,12 @@ import { getLibraryApi } from '@jellyfin/sdk/lib/utils/api/library-api';
 import type { SectionOptions } from './section';
 import { getApi, queryClient, renderGridSection } from './utils/gridSection';
 
-const EXCLUDED_COLLECTION_TYPES = [ 'playlists', 'livetv', 'boxsets', 'channels' ];
+// NOTE: 'boxsets' (a dedicated "Collections" library) is deliberately NOT
+// excluded: the jellyfin-plugin-home-sections plugin and LumaFin-AndroidTV find
+// collections only through such libraries, while on the maintainer's server
+// they were also found by scoping to each Movies/TV library. Scan everything
+// and merge/dedupe so either server setup works.
+const EXCLUDED_COLLECTION_TYPES = [ 'playlists', 'livetv', 'channels' ];
 
 export function loadCollections(
     elem: HTMLElement,
@@ -36,6 +41,7 @@ export function loadCollections(
                 parentId: view.Id,
                 includeItemTypes: [ BaseItemKind.BoxSet ],
                 recursive: true,
+                collapseBoxSetItems: false,
                 // Matches jellyfin-plugin-home-sections' CollectionsSection:
                 // surface the most recently-updated collections first.
                 sortBy: [ ItemSortBy.DateLastContentAdded ],

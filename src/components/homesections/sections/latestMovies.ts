@@ -20,6 +20,8 @@ export function loadLatestMovies(
             userId,
             includeItemTypes: [ BaseItemKind.Movie ],
             recursive: true,
+            // Skip items that have not premiered yet (they'd sort to the top).
+            maxPremiereDate: new Date().toISOString(),
             sortBy: [ ItemSortBy.PremiereDate ],
             sortOrder: [ SortOrder.Descending ],
             limit: options.enableOverflow ? 20 : 16,

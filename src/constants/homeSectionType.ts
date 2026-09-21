@@ -20,7 +20,22 @@ export enum HomeSectionType {
     BecauseYouWatched = 'becauseyouwatched',
     WatchAgain = 'watchagain',
     Collections = 'collections',
-    Genres = 'genres'
+    Genres = 'genres',
+    // Serialized names match LumaFin-AndroidTV's HomeSectionType so a layout
+    // means the same thing on both apps.
+    ContinueWatchingNextUp = 'continuewatchingnextup',
+    Favorites = 'favorites',
+    RecentlyAddedMovies = 'recentlyaddedmovies',
+    RecentlyAddedShows = 'recentlyaddedshows',
+    RecentlyAddedAlbums = 'recentlyaddedalbums',
+    RecentlyAddedArtists = 'recentlyaddedartists',
+    RecentlyAddedMusicVideos = 'recentlyaddedmusicvideos',
+    RecentlyAddedBooks = 'recentlyaddedbooks',
+    RecentlyAddedAudiobooks = 'recentlyaddedaudiobooks',
+    LatestAlbums = 'latestalbums',
+    LatestMusicVideos = 'latestmusicvideos',
+    LatestBooks = 'latestbooks',
+    LatestAudiobooks = 'latestaudiobooks'
 }
 
 // LumaFin: default section layout matching the LumaFin-AndroidTV fork:
