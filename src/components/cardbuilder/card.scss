@@ -940,6 +940,20 @@ button::-moz-focus-inner {
 
 /* LumaFin: Android TV look on the TV layout */
 .layout-tv {
+    /* Android's header has no gradient bar; .detailRibbon already drops it
+       on TV, .skinHeader-withBackground doesn't. */
+    .skinHeader-withBackground {
+        background: none;
+    }
+
+    /* Same treatment as the header tabs: a plain icon in a round #c3c3c3
+       pill on focus, instead of the theme's pink/red accent color. */
+    .paper-icon-button-light.show-focus:focus {
+        color: #111 !important;
+        background: #c3c3c3 !important;
+        border-radius: 999px;
+    }
+
     /* background-size: cover always crops whatever doesn't fit the box's
        exact aspect ratio. Real source art is never exactly 16:9, so cover
        was always clipping a sliver of every image - usually invisible, but

@@ -35,7 +35,28 @@
     display: none;
 }
 
+/* Android TV style, matched directly against a real screenshot: no outer
+   rail around the row - the active-but-unfocused tab gets a translucent
+   gray pill, and whichever tab has remote focus right now gets the
+   brighter, near-opaque #c3c3c3 pill. */
 .layout-tv .emby-tab-button-active {
     border-radius: 999px;
-    background: rgba(255, 255, 255, 0.18) !important;
+    background: rgba(255, 255, 255, 0.22) !important;
+    color: #fff !important;
+}
+
+/* The base show-focus:focus rule forces a bigger scale and clears the
+   background - drop the scale (the pill itself is the indicator). */
+.layout-tv .emby-tab-button.show-focus:focus {
+    transform: none !important;
+    border-radius: 999px;
+    background: #c3c3c3 !important;
+    color: #111 !important;
+}
+
+/* When the active tab itself is focused, use the same focus pill as any
+   other focused tab, not its own unfocused-active one. */
+.layout-tv .emby-tab-button-active.show-focus:focus {
+    background: #c3c3c3 !important;
+    color: #111 !important;
 }
