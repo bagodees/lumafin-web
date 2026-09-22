@@ -10,16 +10,16 @@ import focusManager from '../focusManager';
 import globalize from '../../lib/globalize';
 import loading from '../loading/loading';
 import Events from '../../utils/events.ts';
-import homeSections from '../homesections/homesections';
+import { getActiveHomeSections, setActiveHomeSections } from '../homesections/homeSectionOrder.ts';
+import { ALL_HOME_SECTION_TYPES, HOME_SECTION_TITLE_KEYS } from '../../constants/homeSectionMeta.ts';
 import dom from '../../utils/dom';
 import '../listview/listview.scss';
+import './homeScreenSettings.scss';
 import '../../elements/emby-select/emby-select';
 import '../../elements/emby-checkbox/emby-checkbox';
 import toast from '../toast/toast';
 import template from './homeScreenSettings.template.html';
 import { LibraryTab } from '../../types/libraryTab.ts';
-
-const numConfigurableSections = 10;
 
 function renderViews(page, user, result) {
     let folderHtml = '';
@@ -323,24 +323,85 @@ function renderViewOrder(context, user, result) {
 }
 
 function updateHomeSectionValues(context, userSettings) {
-    for (let i = 1; i <= numConfigurableSections; i++) {
-        const select = context.querySelector(`#selectHomeSection${i}`);
-        const defaultValue = homeSections.getDefaultSection(i - 1);
+    context.querySelector('.selectTVHomeScreen').value = userSettings.get('tvhome') || '';
+}
 
-        const option = select.querySelector(`option[value="${defaultValue}"]`) || select.querySelector('option[value=""]');
+// LumaFin: a single toggleable/reorderable list of every home section type,
+// replacing the old fixed 10-slot dropdown picker. Mirrors
+// LumaFin-AndroidTV's SettingsHomeScreen: enabled sections shown in order at
+// the top (with move up/down and a hide button), disabled ones listed below.
+// Every change is persisted immediately, independent of the page's Save button.
+function renderHomeSectionList(context, userSettings) {
+    const listElem = context.querySelector('.lumafinHomeSectionList');
 
-        const userValue = userSettings.get(`homesection${i - 1}`, false);
+    function renderRows(activeList) {
+        const hiddenList = ALL_HOME_SECTION_TYPES.filter(type => !activeList.includes(type));
+        let html = '';
 
-        if (option) option.value = '';
+        html += activeList.map((type, index) => {
+            const title = escapeHtml(globalize.translate(HOME_SECTION_TITLE_KEYS[type]));
+            let row = `<div class="listItem lumafinSectionItem" data-type="${type}">`;
+            row += '<span class="material-icons listItemIcon visibility" aria-hidden="true"></span>';
+            row += `<div class="listItemBody"><div>${title}</div></div>`;
+            row += `<button type="button" is="paper-icon-button-light" class="btnHomeSectionUp btnHomeSectionMove autoSize"${index === 0 ? ' disabled' : ''} title="${globalize.translate('Up')}"><span class="material-icons keyboard_arrow_up" aria-hidden="true"></span></button>`;
+            row += `<button type="button" is="paper-icon-button-light" class="btnHomeSectionDown btnHomeSectionMove autoSize"${index === activeList.length - 1 ? ' disabled' : ''} title="${globalize.translate('Down')}"><span class="material-icons keyboard_arrow_down" aria-hidden="true"></span></button>`;
+            row += `<button type="button" is="paper-icon-button-light" class="btnHomeSectionHide autoSize" title="${globalize.translate('HideSection')}"><span class="material-icons visibility_off" aria-hidden="true"></span></button>`;
+            row += '</div>';
+            return row;
+        }).join('');
 
-        if (userValue === defaultValue || !userValue) {
-            select.value = '';
-        } else {
-            select.value = userValue;
+        if (hiddenList.length) {
+            html += `<div class="lumafinSectionListHeading">${escapeHtml(globalize.translate('HeaderHiddenSections'))}</div>`;
+            html += hiddenList.map(type => {
+                const title = escapeHtml(globalize.translate(HOME_SECTION_TITLE_KEYS[type]));
+                let row = `<div class="listItem lumafinSectionItem lumafinSectionItem-hidden" data-type="${type}">`;
+                row += '<span class="material-icons listItemIcon visibility_off" aria-hidden="true"></span>';
+                row += `<div class="listItemBody"><div>${title}</div></div>`;
+                row += `<button type="button" is="paper-icon-button-light" class="btnHomeSectionShow autoSize" title="${globalize.translate('ShowSection')}"><span class="material-icons add" aria-hidden="true"></span></button>`;
+                row += '</div>';
+                return row;
+            }).join('');
         }
+
+        listElem.innerHTML = html;
     }
 
-    context.querySelector('.selectTVHomeScreen').value = userSettings.get('tvhome') || '';
+    function persistAndRerender(newActive, focusSelector) {
+        setActiveHomeSections(userSettings, newActive);
+        renderRows(newActive);
+        const toFocus = focusSelector && listElem.querySelector(focusSelector);
+        if (toFocus) focusManager.focus(toFocus);
+    }
+
+    renderRows(getActiveHomeSections(userSettings));
+
+    listElem.addEventListener('click', e => {
+        const item = dom.parentWithClass(e.target, 'lumafinSectionItem');
+        if (!item) return;
+
+        const type = item.getAttribute('data-type');
+        const current = getActiveHomeSections(userSettings);
+
+        if (dom.parentWithClass(e.target, 'btnHomeSectionUp')) {
+            const idx = current.indexOf(type);
+            if (idx > 0) {
+                const next = [...current];
+                [next[idx - 1], next[idx]] = [next[idx], next[idx - 1]];
+                persistAndRerender(next, `[data-type="${type}"] .btnHomeSectionUp`);
+            }
+        } else if (dom.parentWithClass(e.target, 'btnHomeSectionDown')) {
+            const idx = current.indexOf(type);
+            if (idx >= 0 && idx < current.length - 1) {
+                const next = [...current];
+                [next[idx + 1], next[idx]] = [next[idx], next[idx + 1]];
+                persistAndRerender(next, `[data-type="${type}"] .btnHomeSectionDown`);
+            }
+        } else if (dom.parentWithClass(e.target, 'btnHomeSectionHide')) {
+            persistAndRerender(current.filter(t => t !== type), `[data-type="${type}"] .btnHomeSectionShow`);
+        } else if (dom.parentWithClass(e.target, 'btnHomeSectionShow')) {
+            persistAndRerender([...current, type], `[data-type="${type}"] .btnHomeSectionHide`);
+        }
+    });
 }
 
 function getPerLibrarySettingsHtml(item, user, userSettings) {
@@ -417,6 +478,7 @@ function loadForm(context, user, userSettings, apiClient) {
     context.querySelector('.chkHidePlayedFromLatest').checked = user.Configuration.HidePlayedInLatest || false;
 
     updateHomeSectionValues(context, userSettings);
+    renderHomeSectionList(context, userSettings);
 
     const promise1 = queryClient
         .fetchQuery(getUserViewsQuery(
@@ -507,19 +569,8 @@ async function saveUser(context, user, userSettingsInstance, apiClient) {
 
     userSettingsInstance.set('tvhome', context.querySelector('.selectTVHomeScreen').value);
 
-    // LumaFin: save home section layout local-only (see getAllSectionsToShow
-    // in homesections.js) so it can't be silently reverted by a server-synced
-    // "shared display preferences" refresh.
-    userSettingsInstance.set('homesection0', context.querySelector('#selectHomeSection1').value, false);
-    userSettingsInstance.set('homesection1', context.querySelector('#selectHomeSection2').value, false);
-    userSettingsInstance.set('homesection2', context.querySelector('#selectHomeSection3').value, false);
-    userSettingsInstance.set('homesection3', context.querySelector('#selectHomeSection4').value, false);
-    userSettingsInstance.set('homesection4', context.querySelector('#selectHomeSection5').value, false);
-    userSettingsInstance.set('homesection5', context.querySelector('#selectHomeSection6').value, false);
-    userSettingsInstance.set('homesection6', context.querySelector('#selectHomeSection7').value, false);
-    userSettingsInstance.set('homesection7', context.querySelector('#selectHomeSection8').value, false);
-    userSettingsInstance.set('homesection8', context.querySelector('#selectHomeSection9').value, false);
-    userSettingsInstance.set('homesection9', context.querySelector('#selectHomeSection10').value, false);
+    // LumaFin: home section layout (the toggle/reorder list) is persisted
+    // immediately on every change by renderHomeSectionList, not here.
 
     const selectLandings = context.querySelectorAll('.selectLanding');
     for (i = 0, length = selectLandings.length; i < length; i++) {
@@ -587,12 +638,7 @@ function onChange(e) {
 }
 
 function embed(options, self) {
-    let workingTemplate = template;
-    for (let i = 1; i <= numConfigurableSections; i++) {
-        workingTemplate = workingTemplate.replace(`{section${i}label}`, globalize.translate('LabelHomeScreenSectionValue', i));
-    }
-
-    options.element.innerHTML = globalize.translateHtml(workingTemplate, 'core');
+    options.element.innerHTML = globalize.translateHtml(template, 'core');
 
     options.element.querySelector('.viewOrderList').addEventListener('click', onSectionOrderListClick);
     options.element.querySelector('form').addEventListener('submit', onSubmit.bind(self));
@@ -602,11 +648,9 @@ function embed(options, self) {
         options.element.querySelector('.btnSave').classList.remove('hide');
     }
 
-    if (layoutManager.tv) {
-        options.element.querySelector('.selectTVHomeScreenContainer').classList.remove('hide');
-    } else {
-        options.element.querySelector('.selectTVHomeScreenContainer').classList.add('hide');
-    }
+    // LumaFin: not part of the Android app's home settings, so keep it hidden
+    // even on the TV layout.
+    options.element.querySelector('.selectTVHomeScreenContainer').classList.add('hide');
 
     self.loadData(options.autoFocus);
 }

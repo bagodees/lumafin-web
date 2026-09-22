@@ -12,6 +12,7 @@ import { loadCollections } from './sections/collections';
 import { loadContinueWatchingNextUp } from './sections/continueWatchingNextUp';
 import { loadFavorites } from './sections/favorites';
 import { loadGenres } from './sections/genres';
+import { getActiveHomeSections } from './homeSectionOrder';
 import { loadLatestMovies } from './sections/latestMovies';
 import { loadLatestShows } from './sections/latestShows';
 import { loadLibraryButtons } from './sections/libraryButtons';
@@ -30,26 +31,13 @@ import 'elements/emby-button/emby-button';
 
 import './homesections.scss';
 
-const MAX_SECTIONS = 10;
-const MAX_SECTIONS_TV = MAX_SECTIONS + 1; // TV layout can have an extra section to ensure a library section is always visible
-
 export function getDefaultSection(index) {
     if (index < 0 || index > DEFAULT_SECTIONS.length) return '';
     return DEFAULT_SECTIONS[index];
 }
 
 function getAllSectionsToShow(userSettings) {
-    const sections = [];
-    for (let i = 0, length = MAX_SECTIONS; i < length; i++) {
-        // LumaFin: keep home section layout local-only so it can't be silently
-        // reverted by a server-synced "shared display preferences" refresh.
-        let section = userSettings.get('homesection' + i, false) || getDefaultSection(i);
-        if (section === 'folders') {
-            section = getDefaultSection(0);
-        }
-
-        sections.push(section);
-    }
+    const sections = getActiveHomeSections(userSettings);
 
     // Ensure libraries are visible in TV layout
     if (
@@ -75,17 +63,17 @@ export function loadSections(elem, apiClient, user, userSettings) {
         .then(function (userViews) {
             let html = '';
 
+            const sectionsToShow = getAllSectionsToShow(userSettings);
+
             if (userViews.length) {
-                // TV layout can have an extra section to ensure libraries are visible
-                const totalSectionCount = layoutManager.tv ? MAX_SECTIONS_TV : MAX_SECTIONS;
-                for (let i = 0; i < totalSectionCount; i++) {
+                for (let i = 0; i < sectionsToShow.length; i++) {
                     html += '<div class="verticalSection section' + i + '"></div>';
                 }
 
                 elem.innerHTML = html;
                 elem.classList.add('homeSectionsContainer');
 
-                const promises = getAllSectionsToShow(userSettings)
+                const promises = sectionsToShow
                     .map((section, index) => (
                         loadSection(elem, apiClient, user, userSettings, userViews, section, index)
                     ));
