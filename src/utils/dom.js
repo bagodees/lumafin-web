@@ -1,4 +1,6 @@
 
+import layoutManager from '../components/layoutManager';
+
 /**
  * Useful DOM utilities.
  */
@@ -154,7 +156,13 @@ function clearWindowSize() {
  * @returns {windowSize} Window size.
  */
 export function getWindowSize() {
-    if (!windowSize) {
+    // LumaFin: this result is cached below (cleared only on 'resize'/'orientationchange'),
+    // but a TV screen's size never changes and never fires those events. If the
+    // very first read here happened before the webview had finished sizing to
+    // fullscreen (observed on Tizen - card images ended up requested at ~44px
+    // wide because of it), the bad value would be locked in for the entire
+    // session. A fresh read is cheap, so just always take it on TV.
+    if (!windowSize || layoutManager.tv) {
         const innerWidth = window.innerWidth;
         const innerHeight = window.innerHeight;
 

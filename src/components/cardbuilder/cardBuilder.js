@@ -106,12 +106,25 @@ export function setCardData(items, options) {
     }
 
     if (!options.width) {
-        let screenWidth = dom.getWindowSize().innerWidth;
-        const screenHeight = dom.getWindowSize().innerHeight;
+        let screenWidth;
+        let screenHeight;
 
-        if (isResizable(screenWidth)) {
-            const roundScreenTo = 100;
-            screenWidth = Math.floor(screenWidth / roundScreenTo) * roundScreenTo;
+        if (layoutManager.tv) {
+            // LumaFin: window.innerWidth has been observed reporting a tiny
+            // bogus value on the Tizen webview (~190px instead of ~1920),
+            // which isn't a one-time early-load glitch - every read is wrong.
+            // A TV's own screen size never changes anyway, so just assume the
+            // resolution our CSS is built around instead of trusting it.
+            screenWidth = 1920;
+            screenHeight = 1080;
+        } else {
+            screenWidth = dom.getWindowSize().innerWidth;
+            screenHeight = dom.getWindowSize().innerHeight;
+
+            if (isResizable(screenWidth)) {
+                const roundScreenTo = 100;
+                screenWidth = Math.floor(screenWidth / roundScreenTo) * roundScreenTo;
+            }
         }
 
         options.width = getImageWidth(options.shape, screenWidth, screenWidth > (screenHeight * 1.3));

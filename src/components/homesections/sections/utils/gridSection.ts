@@ -8,6 +8,7 @@ import ServerConnections from 'lib/jellyfin-apiclient/ServerConnections';
 import { queryClient } from 'utils/query/queryClient';
 
 import type { SectionContainerElement, SectionOptions } from '../section';
+import { preferParentThumb } from '../preferParentThumb';
 
 /**
  * Renders a single-row home section: a title, an item-scroller container,
@@ -56,7 +57,7 @@ export function renderGridSectionWithTitleText(
 
     itemsContainer.fetchData = fetchItems;
     itemsContainer.getItemsHtml = (items: BaseItemDto[]) => cardBuilder.getCardsHtml({
-        items,
+        items: preferParentThumb(items),
         shape: getBackdropShape(options.enableOverflow),
         preferThumb: true,
         showTitle: true,

@@ -4,6 +4,7 @@ const Backdrop = () => {
     useEffect(() => {
         // Initialize the UI components after first render
         void import('../scripts/autoBackdrops');
+        void import('../scripts/homeFocusBackdrop');
     }, []);
 
     return (

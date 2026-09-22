@@ -937,3 +937,130 @@ button::-moz-focus-inner {
     transform: scale(1.4, 1.4);
     transition: 0.2s;
 }
+
+/* LumaFin: Android TV look on the TV layout */
+.layout-tv {
+    /* background-size: cover always crops whatever doesn't fit the box's
+       exact aspect ratio. Real source art is never exactly 16:9, so cover
+       was always clipping a sliver of every image - usually invisible, but
+       visible on compositions with a subject near the edge. contain shows
+       every pixel of the source, at the cost of a thin blank bar on
+       whichever axis doesn't fill when the aspect doesn't match exactly. */
+    .cardImageContainer {
+        background-size: contain;
+    }
+
+    /* .cardPadder's own dark gray placeholder background (normally hidden
+       once an image loads and covers it) is now visible through contain's
+       letterbox gaps at the rounded corners. Transparent lets the blurred
+       backdrop behind show through instead of a flat gray/black square. */
+    .cardBox:not(.visualCardBox) .cardPadder {
+        background-color: transparent;
+    }
+
+    /* Android shows about 3.3 cards per row; home rows use the "overflow"
+       (horizontal-scroll) shape, not the plain percentage-width one - the
+       web default here (~4.25 per row via .itemsContainer-tv) reads small
+       on a TV next to it. */
+    .itemsContainer-tv > .overflowBackdropCard {
+        width: 30vw;
+    }
+
+    .itemsContainer-tv > .overflowSmallBackdropCard {
+        width: 24vw;
+    }
+
+    .itemsContainer-tv > .overflowSquareCard,
+    .itemsContainer-tv > .overflowPortraitCard {
+        width: 20vw;
+    }
+
+    .cardImageContainer,
+    .cardScalable,
+    .cardBox.visualCardBox {
+        border-radius: 0.9em;
+    }
+
+    .card.show-focus:not(.show-animation) .cardBox.visualCardBox,
+    .card.show-focus:not(.show-animation) .cardBox:not(.visualCardBox) .cardScalable {
+        border-radius: 1.3em;
+    }
+
+    .cardText {
+        font-size: 90%;
+    }
+
+    .cardText-secondary {
+        opacity: 0.7;
+    }
+
+    .innerCardFooter.fullInnerCardFooter.innerCardFooterClear {
+        border-radius: 0 0 0.9em 0.9em;
+    }
+
+    .itemProgressBar {
+        border-radius: 0.3em;
+        margin: 0 0.6em 0.6em;
+        height: 0.3em;
+        overflow: hidden;
+    }
+
+    .cardCriticRatingIndicator,
+    .cardCommunityRatingIndicator {
+        border-radius: 0.5em;
+        font-size: 85%;
+        padding: 0.25em 0.6em;
+    }
+
+    .cardCriticRatingIndicator {
+        background-color: #2e7d32;
+        padding-left: 1.9em;
+    }
+
+    .cardCommunityRatingIndicator {
+        background: #f2c21e;
+        color: #111;
+    }
+
+    .cardCommunityRatingIndicatorIcon {
+        color: #111;
+    }
+
+    /* Android TV has no colored focus ring, just the scaled-up card */
+    .card:focus .cardBox.visualCardBox,
+    .card:focus .cardBox:not(.visualCardBox) .cardScalable {
+        border-color: transparent !important;
+    }
+
+    /* LumaFin: trying opacity-only focus indication (no scale/zoom) -
+       unfocused cards dim to 60%, focused stays full brightness. See git
+       history / session notes for the zoom version if this doesn't work out. */
+
+    .itemsContainer-tv .card,
+    .homeSectionsContainer .card {
+        opacity: 0.6;
+        transition: opacity 200ms ease-out;
+    }
+
+    .itemsContainer-tv .card:focus,
+    .homeSectionsContainer .card:focus {
+        opacity: 1;
+    }
+
+    .sectionTitle-cards {
+        font-weight: 300;
+        font-size: 1.9em;
+    }
+}
+
+body.lumafin-home-backdrop .backdropContainer {
+    filter: blur(28px) brightness(0.55);
+    transform: scale(1.1);
+}
+
+/* .backgroundContainer is a second full-screen overlay painted on top of the
+   backdrop and is opaque outside of video playback transparency modes, which
+   otherwise hides the blurred image entirely. */
+body.lumafin-home-backdrop .backgroundContainer {
+    background: none !important;
+}

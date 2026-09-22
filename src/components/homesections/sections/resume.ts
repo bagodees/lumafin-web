@@ -13,6 +13,7 @@ import { queryClient } from 'utils/query/queryClient';
 import type { UserSettings } from 'scripts/settings/userSettings';
 
 import type { SectionContainerElement, SectionOptions } from './section';
+import { preferParentThumb } from './preferParentThumb';
 
 const dataMonitorHints: Record<string, string> = {
     Audio: 'audioplayback,markplayed',
@@ -55,7 +56,7 @@ function getItemsToResumeHtmlFn(
     return function (items: BaseItemDto[]) {
         const cardLayout = false;
         return cardBuilder.getCardsHtml({
-            items: items,
+            items: useEpisodeImages ? items : preferParentThumb(items),
             preferThumb: true,
             inheritThumb: !useEpisodeImages,
             shape: (mediaType === 'Book') ?

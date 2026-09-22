@@ -15,6 +15,7 @@ import { toIsoDateOnlyString } from 'utils/date';
 import { queryClient } from 'utils/query/queryClient';
 
 import type { SectionContainerElement, SectionOptions } from './section';
+import { preferParentThumb } from './preferParentThumb';
 
 function getNextUpFetchFn(
     apiClient: ApiClient,
@@ -56,7 +57,7 @@ function getNextUpItemsHtmlFn(
     return function (items: BaseItemDto[]) {
         const cardLayout = false;
         return cardBuilder.getCardsHtml({
-            items: items,
+            items: useEpisodeImages ? items : preferParentThumb(items),
             preferThumb: true,
             inheritThumb: !useEpisodeImages,
             shape: getBackdropShape(enableOverflow),

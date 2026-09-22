@@ -25,6 +25,29 @@
         margin-right: 0;
         margin-left: 1.2em;
     }
+
+}
+
+// LumaFin: Android's rows sit noticeably closer together. This is the
+// canonical rule (not a .layout-tv override in card.scss) because webpack
+// duplicates this CSS module into every async route chunk that imports it,
+// and this Tizen webview doesn't reliably let a higher-specificity rule in
+// one stylesheet beat a lower one in another - editing the one source rule,
+// so every duplicate already carries the right value, is what actually
+// works here.
+//
+// .layout-tv is set on <html>, while [dir] is set on <body> (a descendant
+// of html) - .layout-tv must come FIRST in the selector, not nested inside
+// a [dir="ltr"] block via &, which put it second and made the selector
+// require .layout-tv to be a descendant of [dir], backwards from the real
+// DOM. That silently broke every earlier version of this exact rule this
+// session, regardless of specificity or !important.
+.layout-tv [dir="ltr"] .itemsContainer > .card > .cardBox {
+    margin-right: 0.1em;
+}
+
+.layout-tv [dir="rtl"] .itemsContainer > .card > .cardBox {
+    margin-left: 0.1em;
 }
 
 .no-padding {
