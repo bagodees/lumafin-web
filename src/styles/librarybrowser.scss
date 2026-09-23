@@ -229,6 +229,29 @@
     /* In TV layout, it makes more sense to keep the top bar at the top of the page
        Having it follow the view only makes us lose vertical space, while not being focusable */
     position: relative;
+
+    /* Tizen clips the lower edge of a focused right-side header button when
+       paint containment is active. The header contains no content that needs
+       clipping on TV, so preserve layout/style isolation without a paint clip. */
+    contain: layout style;
+    overflow: visible;
+}
+
+/* Android TV leaves roughly a status-bar-height of air above its top
+   navigation. Offset only the header controls on Tizen; adding padding here
+   increases the header's layout height and incorrectly pushes every content
+   row down. */
+.layout-tv .skinHeader .headerTop {
+    position: relative;
+    top: 1.5em;
+}
+
+/* The desktop-width tab rule already lifts this row with a negative margin.
+   Give it a small extra visual offset so its pill center aligns with the
+   logo and the right-side header icons. */
+.layout-tv .skinHeader .headerTabs {
+    position: relative;
+    top: 2.1em;
 }
 
 .hiddenViewMenuBar .skinHeader {

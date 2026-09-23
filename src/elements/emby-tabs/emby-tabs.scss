@@ -35,18 +35,25 @@
     display: none;
 }
 
-/* Android TV style, matched directly against a real screenshot: no outer
-   rail around the row - the active-but-unfocused tab gets a translucent
-   gray pill, and whichever tab has remote focus right now gets the
-   brighter, near-opaque #c3c3c3 pill. */
+/* Android TV style: no outer rail around the row. The active tab is a
+   small, translucent gray pill; focus only makes that pill a little more
+   pronounced, instead of switching it to the bright solid treatment used
+   by the browser layout. */
+.layout-tv .emby-tab-button {
+    /* Android's top-navigation pills are deliberately compact. The former
+       generic 1.5em padding made the Tizen header look a full row taller. */
+    padding: 0.75em 1.25em;
+}
+
 .layout-tv .emby-tab-button-active {
     border-radius: 999px;
-    background: rgba(255, 255, 255, 0.22) !important;
+    background: rgba(255, 255, 255, 0.20) !important;
     color: #fff !important;
 }
 
 /* The base show-focus:focus rule forces a bigger scale and clears the
-   background - drop the scale (the pill itself is the indicator). */
+   background - drop the scale (the pill itself is the indicator). Android
+   uses a clearly brighter, opaque gray pill for the remote-focused item. */
 .layout-tv .emby-tab-button.show-focus:focus {
     transform: none !important;
     border-radius: 999px;
@@ -54,8 +61,7 @@
     color: #111 !important;
 }
 
-/* When the active tab itself is focused, use the same focus pill as any
-   other focused tab, not its own unfocused-active one. */
+/* When the active tab itself is focused, use the same compact focus pill. */
 .layout-tv .emby-tab-button-active.show-focus:focus {
     background: #c3c3c3 !important;
     color: #111 !important;

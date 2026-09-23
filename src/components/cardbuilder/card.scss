@@ -952,6 +952,12 @@ button::-moz-focus-inner {
         color: #111 !important;
         background: #c3c3c3 !important;
         border-radius: 999px;
+
+        /* The browser focus style enlarges the icon by 30%. On Tizen that
+           overflows the contained header row, so the bottom of right-side
+           header pills gets cut off. Android keeps these focus pills at
+           their natural size. */
+        transform: none !important;
     }
 
     /* background-size: cover always crops whatever doesn't fit the box's
@@ -993,6 +999,29 @@ button::-moz-focus-inner {
     .cardScalable,
     .cardBox.visualCardBox {
         border-radius: 0.9em;
+    }
+
+    /* Remove the web client's horizontal card-box gutter on TV. The card
+       layout already supplies its own separation; keeping the base .6em
+       box margin on both sides is what leaves Tizen visibly wider than the
+       Android rows. Vertical row spacing remains unchanged. */
+    .itemsContainer-tv .card .cardBox,
+    .homeSectionsContainer .card .cardBox {
+        margin-left: 0 !important;
+        margin-right: 0 !important;
+    }
+
+    /* The overflow-card flex items retain a small structural gutter even
+       after their boxes are flush. Trim that final ~6px on the trailing
+       side to match Android's edge-to-edge row rhythm. */
+    [dir='ltr'] .itemsContainer-tv .card,
+    [dir='ltr'] .homeSectionsContainer .card {
+        margin-right: -0.35em;
+    }
+
+    [dir='rtl'] .itemsContainer-tv .card,
+    [dir='rtl'] .homeSectionsContainer .card {
+        margin-left: -0.35em;
     }
 
     .card.show-focus:not(.show-animation) .cardBox.visualCardBox,
@@ -1046,19 +1075,36 @@ button::-moz-focus-inner {
         border-color: transparent !important;
     }
 
-    /* LumaFin: trying opacity-only focus indication (no scale/zoom) -
-       unfocused cards dim to 60%, focused stays full brightness. See git
-       history / session notes for the zoom version if this doesn't work out. */
+    /* Match Android TV's focus treatment: cards remain dimmed while idle,
+       then grow smoothly to 108% when the remote selects them. Applying the
+       transform to the card itself keeps its artwork, progress bar and text
+       moving together. */
 
     .itemsContainer-tv .card,
     .homeSectionsContainer .card {
         opacity: 0.6;
-        transition: opacity 200ms ease-out;
+        transform: scale(1);
+        transform-origin: center;
+        transition: transform 200ms ease-out, opacity 200ms ease-out;
     }
 
     .itemsContainer-tv .card:focus,
     .homeSectionsContainer .card:focus {
         opacity: 1;
+        transform: scale(1.08);
+        will-change: transform;
+    }
+
+    /* Cards using Jellyfin's animation class scale their inner box, so set
+       the same final size there and avoid compounding two scale transforms. */
+    .itemsContainer-tv .card.show-animation:focus,
+    .homeSectionsContainer .card.show-animation:focus {
+        transform: scale(1);
+    }
+
+    .itemsContainer-tv .card.show-animation:focus > .cardBox,
+    .homeSectionsContainer .card.show-animation:focus > .cardBox {
+        transform: scale(1.08);
     }
 
     .sectionTitle-cards {
