@@ -27,3 +27,81 @@
     text-overflow: ellipsis;
     overflow: hidden;
 }
+
+/* Android TV's Genres row is made from four movie posters per genre rather
+   than a single generic genre card. */
+.layout-tv .genreCollageRow {
+    display: flex;
+    align-items: flex-start;
+    /* The shared TV scroller measures this element as its viewport. Keep it
+       viewport-wide and let the fixed-width children provide overflow. */
+    width: 100%;
+    min-width: 0;
+}
+
+.layout-tv .genreCollageTile {
+    /* GenreTilePresenter is 210dp wide. Tizen's TV browser renders this row
+       at half its CSS pixel scale, so 420px produces Android's 210dp visual
+       size on the actual TV surface. */
+    display: block !important;
+    flex: 0 0 420px;
+    width: 420px;
+    /* Follow the same trailing overlap/gutter as the ordinary TV cards. */
+    margin: 0 -0.35em 0 0;
+    padding: 0;
+    border: 0;
+    background: transparent;
+    color: rgba(255, 255, 255, 0.82);
+    text-align: left;
+    text-decoration: none;
+    opacity: 0.6;
+    transform: scale(1);
+    transform-origin: center;
+    transition: transform 200ms ease-out, opacity 200ms ease-out;
+}
+
+.layout-tv .genreCollageGrid {
+    display: grid;
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+    grid-template-rows: repeat(2, minmax(0, 1fr));
+    width: 100%;
+    aspect-ratio: 1;
+    overflow: hidden;
+    border: 0;
+    border-radius: 0.55em;
+    background: #303030;
+    box-sizing: border-box;
+    transition: border-color 160ms ease-out;
+}
+
+.layout-tv .genreCollageGrid > span {
+    min-width: 0;
+    min-height: 0;
+    background: #303030 center / cover no-repeat;
+}
+
+.layout-tv .genreCollageName {
+    display: block;
+    overflow: hidden;
+    padding-top: 0.45em;
+    color: rgba(255, 255, 255, 0.8);
+    font-size: 90%;
+    text-align: left;
+    text-overflow: ellipsis;
+    white-space: nowrap;
+}
+
+.layout-tv .genreCollageTile,
+.layout-tv .genreCollageTile:focus,
+.layout-tv .genreCollageTile:active {
+    background: transparent !important;
+    border: 0 !important;
+    box-shadow: none !important;
+    outline: 0;
+}
+
+.layout-tv .genreCollageTile:focus {
+    opacity: 1;
+    transform: scale(1.08);
+    will-change: transform;
+}

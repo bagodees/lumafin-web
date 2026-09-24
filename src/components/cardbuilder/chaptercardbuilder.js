@@ -103,7 +103,10 @@ function buildChapterCard(item, apiClient, chapter, index, { width, coverImage }
     const cardBoxCssClass = 'cardBox';
     const cardScalableClass = 'cardScalable';
 
-    return `<button type="button" class="${className}"${dataAttributes}><div class="${cardBoxCssClass}"><div class="${cardScalableClass}"><div class="cardPadder-${shape}"></div>${cardImageContainer}</div><div class="innerCardFooter">${nameHtml}</div></div></div></button>`;
+    // Keep the text preview beneath, rather than inside, the scalable image.
+    // It stays in cardBox so its left edge follows the thumbnail's margin;
+    // otherwise the first chapter caption can be clipped by the scroller.
+    return `<button type="button" class="${className}"${dataAttributes}><div class="${cardBoxCssClass}"><div class="${cardScalableClass}"><div class="cardPadder-${shape}"></div>${cardImageContainer}</div></div><div class="chapterCardFooter">${nameHtml}</div></div></button>`;
 }
 
 export function buildChapterCards(item, chapters, options) {

@@ -254,6 +254,576 @@
     top: 2.1em;
 }
 
+/* Android-TV-inspired detail hero. Keep this TV-only: desktop retains the
+   browser's poster-and-metadata layout while TV gets a backdrop-led scene
+   with the poster lower-left, metadata in the centre and a title logo on
+   the right. Controls receive their Android treatment in a follow-up pass. */
+.layout-tv .itemDetailPage {
+    position: relative;
+}
+
+/* Use the same softened backdrop language as the TV home page so detail
+   controls stay readable instead of sitting on a sharp full-screen image. */
+body.lumafin-detail-backdrop .backdropContainer {
+    filter: blur(28px) brightness(0.8);
+    transform: scale(1.1);
+}
+
+body.lumafin-detail-backdrop .backdropContainer::after {
+    content: '';
+    position: absolute;
+    inset: 0;
+    z-index: 1;
+    background: rgba(185, 185, 185, 0.58);
+    pointer-events: none;
+}
+
+body.lumafin-detail-backdrop .backdropImage {
+    z-index: 0;
+}
+
+body.lumafin-detail-backdrop .backgroundContainer.withBackdrop {
+    opacity: 0.45;
+}
+
+.layout-tv .detailPagePrimaryContainer {
+    min-height: 33vw;
+}
+
+.layout-tv .detailImageContainer .card {
+    position: absolute;
+    top: 18vh !important;
+    left: 0;
+    width: 25vw;
+    max-width: none;
+    margin: 0;
+    transform: translateX(-0.7em);
+}
+
+.layout-tv .detailRibbon {
+    /* Pull the title back into Android's upper hero band. */
+    margin-top: -2.45em;
+    padding-top: 0;
+    padding-left: 31vw !important;
+    padding-right: 27vw !important;
+    /* Android TV uses its light sans-serif face for detail headers. Prefer
+       the native TV/browser equivalents before the web app's Noto fallback. */
+    font-family: Roboto, SamsungOne, "Segoe UI Light", "Noto Sans", sans-serif;
+    transform: translateY(-1.5em);
+}
+
+.layout-tv .detailRibbon .parentName {
+    font-weight: 300;
+    letter-spacing: -0.015em;
+}
+
+.layout-tv .detailRibbon .itemName.subtitle {
+    font-weight: 700;
+    letter-spacing: -0.01em;
+}
+
+/* Android TV gives movie titles and their longer info row more room before
+   the logo column. */
+.layout-tv .tvMovieDetail .detailRibbon {
+    padding-right: 16vw !important;
+    transform: translateY(-0.3em);
+}
+
+.layout-tv .tvMovieDetail .itemMiscInfo-primary {
+    width: 62vw;
+}
+
+.layout-tv .tvMovieDetail .mainDetailButtons {
+    transform: translateY(-0.3em);
+}
+
+.layout-tv .tvMovieDetail .detailHeroOverview .overview-controls {
+    position: relative;
+    z-index: 2;
+}
+
+.layout-tv .tvMovieDetail .detailHeroOverview .overview-expand {
+    display: none !important;
+}
+
+.layout-tv .tvMovieDetail .tvMovieOverviewToggle {
+    cursor: pointer;
+}
+
+.layout-tv .tvMovieDetail .tagline,
+.layout-tv .tvMovieDetail .itemTags {
+    display: none !important;
+}
+
+.layout-tv .tvMovieDetail #castCollapsible {
+    order: 3;
+    /* Match the left edge used by the Chapters rail below. */
+    width: 95.75vw;
+    max-width: none;
+    margin-left: -27.75vw;
+    /* The web detail layout leaves a larger hand-off from the hero than
+       Android TV. Tighten only this first media row. */
+    margin-top: -2em;
+    /* Cast captions sit below a taller 7:9 row than chapter captions. Close
+       that otherwise uneven hand-off so Chapters follows at the same rhythm
+       as Chapters → More Like This. */
+    margin-bottom: -1.75em !important;
+}
+
+/* Series puts Next Episode in the primary detail container and Cast in the
+   secondary one. That container boundary needs a little more lift than a
+   movie, whose Cast row follows the hero directly. */
+.layout-tv .itemDetailPage:not(.tvMovieDetail) #castCollapsible {
+    margin-top: -4em;
+}
+
+/* Android TV renders cast and crew through CardPresenter(true, 130): a
+   130dp-tall portrait card rather than the normal large responsive poster.
+   Keep the matching compact card size on TV detail pages so a full cast row
+   is visible without overwhelming the hero. */
+.layout-tv .itemDetailPage #castCollapsible .overflowPortraitCard {
+    flex: 0 0 12.5vw;
+    width: 12.5vw !important;
+    max-width: none;
+}
+
+.layout-tv .itemDetailPage #castCollapsible .overflowPortraitCard > .cardBox {
+    /* Android's Compose row leaves only a narrow inter-card gap. */
+    margin-right: 0.45vw !important;
+}
+
+.layout-tv .itemDetailPage #castCollapsible .overflowPortraitCard .cardScalable {
+    height: 13.55vw;
+}
+
+.layout-tv .itemDetailPage #castCollapsible .overflowPortraitCard .cardPadder-overflowPortrait {
+    height: 13.55vw;
+    padding-bottom: 0;
+}
+
+/* Android TV uses each person's Primary image in a 7:9 card. The web
+   renderer already requests that same image; crop and clip it as the
+   rounded Tizen card rather than allowing the generic artwork rules to
+   square off or letterbox a portrait. */
+.layout-tv .itemDetailPage #castCollapsible .overflowPortraitCard .cardScalable {
+    overflow: hidden;
+    border-radius: 0.9em;
+}
+
+.layout-tv .itemDetailPage #castCollapsible .overflowPortraitCard .cardImageContainer {
+    background-size: cover;
+    border-radius: inherit;
+}
+
+/* Android TV uses 120dp, 16:9 chapter cards and puts the title and time
+   beneath the thumbnail.  The web card's overlay footer is reserved for its
+   legacy "Scenes" presentation, so replace it on TV detail pages. */
+.layout-tv .itemDetailPage #scenesCollapsible .chapterCard {
+    flex: 0 0 22.2vw;
+    width: 22.2vw !important;
+    max-width: none;
+}
+
+/* The chapter rail shares Android's wide left edge with Cast & crew rather
+   than inheriting the narrower metadata column. */
+.layout-tv .tvMovieDetail #scenesCollapsible {
+    /* Keep the heading in the normal detail column. Moving the entire
+       section left also moved “Chapters” offscreen on Tizen. */
+    width: auto;
+    margin-left: 0;
+}
+
+.layout-tv .tvMovieDetail #scenesCollapsible #scenesContent {
+    padding-left: 0;
+}
+
+/* The generic card margin starts the thumbnail correctly, but its caption
+   is laid out from the rail edge. Put that inset on the rail itself so the
+   heading, image, and first caption all share the same visible left edge. */
+.layout-tv .tvMovieDetail #scenesCollapsible > [is="emby-scroller"] {
+    box-sizing: border-box;
+    padding-left: 0.6em !important;
+}
+
+/* A series moves Chapters into the primary column directly after Next
+   Episode. Give it the exact full-width rail and title inset used by the
+   movie version rather than the narrow metadata column it inherited there. */
+.layout-tv .itemDetailPage:not(.tvMovieDetail) #scenesCollapsible {
+    /* Chapters leads the TV detail rows, before Next Episode. */
+    order: 2;
+    width: 95.75vw;
+    max-width: none;
+    margin-left: -27.75vw;
+}
+
+.layout-tv .itemDetailPage:not(.tvMovieDetail) #scenesCollapsible > [is="emby-scroller"] {
+    box-sizing: border-box;
+    padding-left: 0.6em !important;
+}
+
+.layout-tv .tvMovieDetail #castCollapsible .sectionTitle-cards,
+.layout-tv .tvMovieDetail #scenesCollapsible .sectionTitle-cards,
+.layout-tv .itemDetailPage:not(.tvMovieDetail) #scenesCollapsible .sectionTitle-cards {
+    /* Keep movie-detail row headings consistent with “More Like This”. */
+    font-size: 1.9em;
+    font-weight: 300;
+}
+
+.layout-tv .itemDetailPage #scenesCollapsible .chapterCard > .cardBox {
+    /* The box and its trailing gap must fit inside the flex slot. Previously
+       the box consumed the entire slot and the following card painted over
+       its right-hand rounded edge. */
+    width: calc(22.2vw - 1em) !important;
+    margin-left: 0 !important;
+    margin-right: 1em !important;
+}
+
+.layout-tv .itemDetailPage #scenesCollapsible .chapterCard .cardScalable {
+    width: calc(22.2vw - 1em) !important;
+}
+
+.layout-tv .itemDetailPage #scenesCollapsible .chapterCard .cardScalable {
+    height: 12.5vw;
+    overflow: hidden;
+    border-radius: 0.9em;
+}
+
+.layout-tv .itemDetailPage #scenesCollapsible .chapterCard .cardPadder-overflowBackdrop {
+    height: 12.5vw;
+    padding-bottom: 0;
+    border-radius: inherit;
+}
+
+/* Android's ChapterItemInfo image is center-cropped into its 16:9 card.
+   The web TV theme normally uses contain for all artwork, which leaves
+   chapter stills looking unlike the rounded cards used everywhere else. */
+.layout-tv .itemDetailPage #scenesCollapsible .chapterCard .chapterCardImageContainer {
+    background-size: cover;
+    border-radius: inherit;
+}
+
+.layout-tv .itemDetailPage #scenesCollapsible .chapterCardFooter {
+    min-height: 2.5em;
+    padding-top: 0.35em;
+    color: #fff;
+}
+
+.layout-tv .itemDetailPage #scenesCollapsible .chapterCardFooter > .cardText {
+    padding: 0.08em 0;
+    text-align: left;
+}
+
+.layout-tv .detailRibbon .itemMiscInfo,
+.layout-tv .detailHeroMetadata,
+.layout-tv .detailHeroOverview {
+    font-family: Roboto, SamsungOne, "Segoe UI Light", "Noto Sans", sans-serif;
+}
+
+.layout-tv .detailHeroOverview {
+    max-width: 43vw;
+    margin-top: -1.5em;
+}
+
+.layout-tv .detailHeroMetadata {
+    max-width: 43vw;
+    margin-top: 0.25em;
+    font-size: 90%;
+}
+
+.layout-tv .detailHeroMetadata .itemDetailsGroup {
+    margin: 0;
+}
+
+.layout-tv .itemMiscInfo-primary {
+    gap: 0.35em;
+    width: 64vw;
+    max-width: none;
+    flex-wrap: nowrap;
+    overflow: visible;
+}
+
+.layout-tv .itemMiscInfo-primary .starRatingContainer {
+    order: 1;
+}
+
+.layout-tv .itemMiscInfo-primary .tvEpisodeIndex {
+    order: 2;
+    font-weight: 600;
+}
+
+.layout-tv .itemMiscInfo-primary .tvEpisodeDate {
+    order: 3;
+}
+
+.layout-tv .itemMiscInfo-primary .tvEpisodeRuntime {
+    order: 4;
+}
+
+.layout-tv .itemMiscInfo-primary .endsAt {
+    display: none;
+}
+
+.layout-tv .itemMiscInfo-primary .tvMovieCommunityRating {
+    color: #ffd230;
+}
+
+.layout-tv .itemMiscInfo-primary .tvMovieCriticRating {
+    color: #ff4b25;
+}
+
+.layout-tv .itemMiscInfo-primary .tvMovieOfficialRating {
+    border: 1px solid currentColor;
+    border-radius: 0.18em;
+    padding: 0.08em 0.35em;
+}
+
+.layout-tv .tvEpisodeBadges {
+    display: inline-flex;
+    order: 6;
+    gap: 0.28em;
+    flex-wrap: nowrap;
+    white-space: nowrap;
+}
+
+.layout-tv .tvEpisodeBadges span {
+    padding: 0.15em 0.38em;
+    border-radius: 0.18em;
+    background: rgba(255, 255, 255, 0.82);
+    color: #222;
+    font-size: 78%;
+    font-weight: 600;
+}
+
+.layout-tv .detailHeroMetadata .itemDetailsGroup {
+    display: flex;
+    flex-direction: column;
+}
+
+.layout-tv .detailHeroMetadata .detailMetadata-Genre {
+    order: -1;
+}
+
+.layout-tv .detailHeroMetadata .detailMetadata-Writer {
+    display: none;
+}
+
+.layout-tv .detailHeroMetadata .detailMetadata-Genre .label {
+    display: none;
+}
+
+.layout-tv .detailHeroMetadata .detailMetadata-Director .label {
+    font-size: 0;
+    flex: 0 0 auto !important;
+    margin-right: 0.6em !important;
+    white-space: nowrap;
+}
+
+.layout-tv .detailHeroMetadata .detailMetadata-Director .label::after {
+    content: 'Directed by ';
+    font-size: 1rem;
+}
+
+.layout-tv .detailHeroMetadata .tvDirectorLine {
+    display: flex;
+    align-items: baseline;
+    gap: 0;
+    order: 0;
+    white-space: nowrap;
+}
+
+.layout-tv .detailHeroMetadata .tvDirectorLine .tvEndsAt {
+    display: inline;
+}
+
+.layout-tv .detailHeroMetadata .tvCreditSeparator {
+    margin: 0 0.45em;
+}
+
+.layout-tv .detailHeroOverview .overview {
+    margin: 0.35em 0 0;
+}
+
+.layout-tv .detailHeroOverview .overview-controls {
+    margin-top: 0.25em;
+}
+
+/* Audio and subtitle choices sit directly beneath the poster on Android TV.
+   Keep source/video selection out of this compact hero control group. */
+.layout-tv .detailHeroTracks {
+    position: absolute;
+    z-index: 2;
+    top: calc(18.5vh + 14.1vw + 0.5em);
+    left: 4vw;
+    width: 25vw;
+}
+
+.layout-tv .detailHeroTracks .trackSelections {
+    display: block;
+}
+
+.layout-tv .detailHeroTracks .selectSourceContainer,
+.layout-tv .detailHeroTracks .selectVideoContainer {
+    display: none !important;
+}
+
+.layout-tv .detailHeroTracks .selectContainer {
+    display: block;
+    position: relative;
+    margin: 0.35em 0;
+}
+
+.layout-tv .detailHeroTracks .selectLabel {
+    display: block;
+    overflow: hidden;
+    box-sizing: border-box;
+    width: 100%;
+    min-height: 1.9em;
+    padding: 0.42em 0.65em;
+    border-radius: 0.35em;
+    background: rgba(190, 190, 190, 0.42);
+    color: #fff;
+    text-overflow: ellipsis;
+    white-space: nowrap;
+}
+
+.layout-tv .detailHeroTracks .detailTrackSelect {
+    position: absolute;
+    inset: 0;
+    width: 100%;
+    height: 100%;
+    opacity: 0.01;
+    border: 0;
+    border-radius: 0.35em;
+    padding: 0;
+}
+
+.layout-tv .detailHeroTracks .selectLabelFocused {
+    outline: 0.12em solid #fff;
+    background: #c3c3c3;
+    color: #111;
+}
+
+.layout-tv .detailHeroTracks .selectArrowContainer {
+    display: none;
+}
+
+/* The larger Android action row sits below the overview rather than directly
+   below the title. Button sizing and labels are handled in the next pass. */
+.layout-tv .mainDetailButtons {
+    /* A later desktop-width rule resets the generic button margin, so keep
+       the hero spacing authoritative for TV. */
+    margin-top: 1.65em !important;
+    transform: translateY(4.25em);
+    gap: 0.7em;
+    align-items: flex-start;
+}
+
+/* Android TV presents detail actions as a row of large neutral tiles with a
+   caption below each tile. The button's title is already localized and is
+   kept in sync with Resume versus Play by the detail controller. */
+.layout-tv .detailButton {
+    min-width: 4.8em;
+    padding: 0 !important;
+    background: transparent !important;
+    color: #f4f4f4 !important;
+}
+
+.layout-tv .detailButton-content {
+    width: 4.3em;
+    height: 2.7em;
+    border-radius: 0.3em;
+    background: rgba(190, 190, 190, 0.48);
+}
+
+.layout-tv .detailButton::after {
+    content: attr(title);
+    display: block;
+    margin-top: 0.45em;
+    color: rgba(255, 255, 255, 0.7);
+    font-size: 78%;
+    line-height: 1.1;
+    white-space: nowrap;
+}
+
+.layout-tv .detailButton.show-focus:focus {
+    transform: none !important;
+}
+
+.layout-tv .detailButton.show-focus:focus .detailButton-content {
+    background: #c3c3c3;
+    color: #111;
+}
+
+.layout-tv .detailLogo {
+    display: block !important;
+    z-index: 1;
+    top: 21.5vh;
+    right: 4vw;
+    width: 19vw;
+    height: 11vh;
+}
+
+.layout-tv .detailPagePrimaryContent {
+    padding-top: 0.5em;
+    padding-left: 31vw !important;
+    padding-right: 27vw !important;
+}
+
+.layout-tv .detailPagePrimaryContent .detailSectionContent {
+    max-width: 43vw;
+}
+
+/* Surface the content relevant to viewing first; the extended technical
+   details continue below the episode row. */
+.layout-tv .detailSection {
+    display: flex;
+    flex-direction: column;
+}
+
+.layout-tv .detailSectionContent {
+    order: 1;
+}
+
+.layout-tv .trackSelections {
+    order: 2;
+}
+
+.layout-tv .nextUpSection {
+    order: 3;
+    /* The episode rail spans the page under the hero, beginning beside the
+       poster instead of inheriting the title column's left inset. */
+    width: 92vw;
+    max-width: none;
+    margin-left: -26vw;
+}
+
+/* Android TV uses the current season's multi-episode rail as its next
+   episode carousel. It also spans the page below the hero. */
+.layout-tv .moreFromSeasonSection {
+    order: 3;
+    width: 92vw;
+    max-width: none;
+    /* Share Cast & Crew's left edge rather than the narrower hero column. */
+    margin-left: -27.75vw;
+}
+
+.layout-tv .moreFromSeasonSection .sectionTitle {
+    display: block !important;
+    margin: 0 0 0.7em;
+    transform: translateY(0.25em);
+}
+
+.layout-tv .moreFromSeasonSection > [is="emby-scroller"] {
+    /* Leave the same title-to-card breathing room used by Cast & Crew. */
+    transform: translateY(-0.8em);
+    margin-bottom: -0.8em;
+    padding-left: 0.4em !important;
+}
+
+.layout-tv .itemDetailsGroup {
+    order: 4;
+}
+
 .hiddenViewMenuBar .skinHeader {
     display: none;
 }
@@ -1149,7 +1719,10 @@ div.itemDetailGalleryLink.defaultCardBackground {
 }
 
 .layout-tv .detailVerticalSection {
-    margin-bottom: 3.4em !important;
+    /* Android TV keeps consecutive detail rows compact. The old web-wide
+       3.4em gap made every row after Cast, Chapters, or Next Episode drift
+       progressively lower than its Android counterpart. */
+    margin-bottom: 0.35em !important;
 }
 
 .detailPageWrapperContainer {

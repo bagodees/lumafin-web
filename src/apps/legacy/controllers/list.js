@@ -993,6 +993,15 @@ class ItemsView {
     }
 
     getSortValues() {
+        // Home's Android-style Genre collage opens its movie grid by
+        // community rating. Keep ordinary library sorting preferences intact.
+        if (this.params.sortBy) {
+            return {
+                sortBy: this.params.sortBy,
+                sortOrder: this.params.sortOrder || 'Descending'
+            };
+        }
+
         const basekey = this.getSettingsKey();
         return userSettings.getSortValuesLegacy(basekey, this.getDefaultSortBy());
     }

@@ -14,6 +14,7 @@ import cardBuilder from 'components/cardbuilder/cardBuilder';
 import { buildCardImage } from 'components/cardbuilder/cardImage';
 import { getPortraitShape, getSquareShape } from 'components/cardbuilder/utils/shape';
 import confirm from 'components/confirm/confirm';
+import focusManager from 'components/focusManager';
 import imageLoader from 'components/images/imageLoader';
 import itemContextMenu from 'components/itemContextMenu';
 import itemHelper from 'components/itemHelper';
@@ -476,12 +477,12 @@ function renderName(item, container, context) {
         }
     }
 
-    const name = escapeHtml(itemHelper.getDisplayName(item, {
-        includeParentInfo: false
-    }));
+    const name = escapeHtml(layoutManager.tv && item.Type === 'Episode'
+        ? item.Name
+        : itemHelper.getDisplayName(item, { includeParentInfo: false }));
 
     if (html && !parentNameLast) {
-        if (tvSeasonHtml) {
+        if (tvSeasonHtml && !layoutManager.tv) {
             html += '<h3 class="itemName infoText subtitle focuscontainer-x"><bdi>' + tvSeasonHtml + ' - ' + name + '</bdi></h3>';
         } else {
             html += '<h3 class="itemName infoText subtitle"><bdi>' + name + '</bdi></h3>';
@@ -514,12 +515,18 @@ function setTrailerButtonVisibility(page, item) {
 }
 
 function renderBackdrop(page, item) {
-    if (!layoutManager.mobile && dom.getWindowSize().innerWidth >= 1000) {
+    document.body.classList.toggle('lumafin-detail-backdrop', layoutManager.tv);
+
+    // Tizen TV renders at 960px wide, just below the browser breakpoint.
+    // It is still a TV surface and should receive the same detail backdrop.
+    if (layoutManager.tv || (!layoutManager.mobile && dom.getWindowSize().innerWidth >= 1000)) {
         const isBannerEnabled = !layoutManager.tv && userSettings.detailsBanner();
         // If backdrops are disabled, but the header banner is enabled, add a class to the page to disable the transparency
         page.classList.toggle('noBackdropTransparency', isBannerEnabled && !userSettings.enableBackdrops());
 
-        setBackdrops([item], null, isBannerEnabled);
+        // Android TV presents an item backdrop on detail pages regardless of
+        // the optional web backdrop preference. Preserve that TV behavior.
+        setBackdrops([item], null, isBannerEnabled || layoutManager.tv);
     } else {
         clearBackdrop();
     }
@@ -555,6 +562,7 @@ function reloadFromItem(instance, page, params, item, user) {
     const apiClient = ServerConnections.getApiClient(item.ServerId);
 
     libraryMenu.setTitle('');
+    page.classList.toggle('tvMovieDetail', layoutManager.tv && item.Type === 'Movie');
     unmount(instance);
 
     // Start rendering the artwork first
@@ -572,7 +580,9 @@ function reloadFromItem(instance, page, params, item, user) {
     // Render the main information for the item
     renderName(item, page.querySelector('.nameContainer'), params.context);
     renderDetails(page, instance, item, apiClient, params.context);
+    arrangeTvHero(page, item);
     renderTrackSelections(page, instance, item);
+    updateTvTrackLabels(page);
 
     renderSeriesTimerEditor(page, item, apiClient, user);
     renderTimerEditor(page, item, apiClient, user);
@@ -753,10 +763,20 @@ function renderLinks(page, item) {
 }
 
 function renderDetailImage(apiClient, elem, item, loader) {
+    // Android TV presents movie details with the landscape artwork on the
+    // left, not the movie's portrait poster.
+    const useTvLandscapeImage = layoutManager.tv && item.Type === 'Movie';
+    const imageItem = useTvLandscapeImage
+        ? { ...item, PrimaryImageAspectRatio: 16 / 9 }
+        : item;
     const html = buildCardImage(
         apiClient,
-        item,
-        { width: dom.getWindowSize().innerWidth * 0.25 }
+        imageItem,
+        {
+            width: dom.getWindowSize().innerWidth * 0.25,
+            preferThumb: useTvLandscapeImage,
+            inheritThumb: !useTvLandscapeImage
+        }
     );
 
     elem.innerHTML = html;
@@ -775,6 +795,70 @@ function renderImage(page, item, apiClient) {
         });
 }
 
+function arrangeTvHero(page, item) {
+    if (!layoutManager.tv) return;
+
+    const heroOverview = page.querySelector('.detailHeroOverview');
+    const heroTracks = page.querySelector('.detailHeroTracks');
+    const overview = page.querySelector('.overview');
+    const overviewControls = page.querySelector('.overview-controls');
+    const trackSelections = page.querySelector('.trackSelections');
+    const detailSection = page.querySelector('.detailPagePrimaryContent .detailSection');
+    const secondaryContainer = page.querySelector('.detailPageSecondaryContainer');
+    const moreFromSeason = page.querySelector('.moreFromSeasonSection');
+    const castSection = page.querySelector('#castCollapsible');
+    const scenesSection = page.querySelector('#scenesCollapsible');
+    const heroMetadata = page.querySelector('.detailHeroMetadata');
+    const itemDetailsGroup = page.querySelector('.itemDetailsGroup');
+
+    if (!heroOverview) return;
+
+    // Keep the overview with the title and metadata on TV, before the action
+    // buttons. The desktop/mobile DOM order remains untouched.
+    if (overview) {
+        heroOverview.replaceChildren(overview);
+        if (overviewControls) heroOverview.appendChild(overviewControls);
+    }
+    if (heroTracks && trackSelections) heroTracks.appendChild(trackSelections);
+    if (heroMetadata && itemDetailsGroup) heroMetadata.appendChild(itemDetailsGroup);
+    // Put an episode's multi-card rail before extended metadata, matching the
+    // Android TV reading order. It remains in its original location elsewhere.
+    if (detailSection && moreFromSeason) detailSection.appendChild(moreFromSeason);
+
+    if (item.Type === 'Movie') {
+        if (detailSection && castSection) detailSection.appendChild(castSection);
+        // A detail page is reused when navigating between items. Return
+        // Chapters to the movie's secondary list after visiting a series.
+        if (secondaryContainer && scenesSection && scenesSection.parentElement !== secondaryContainer) {
+            const collectionsSection = secondaryContainer.querySelector('#collectionsCollapsible');
+            secondaryContainer.insertBefore(scenesSection, collectionsSection || null);
+        }
+    } else {
+        // And restore Cast to its regular secondary row after leaving a movie.
+        if (secondaryContainer && castSection && castSection.parentElement !== secondaryContainer) {
+            const guestCastSection = secondaryContainer.querySelector('#guestCastCollapsible');
+            secondaryContainer.insertBefore(castSection, guestCastSection || null);
+        }
+
+        // Series chapters used to remain at the bottom after cast and guest
+        // stars. Android exposes them immediately after the episode rail.
+        if (detailSection && scenesSection) detailSection.appendChild(scenesSection);
+    }
+}
+
+function updateTvTrackLabels(page) {
+    if (!layoutManager.tv) return;
+
+    [
+        ['.selectAudio', 'Audio'],
+        ['.selectSubtitles', 'Subtitles']
+    ].forEach(([selector, prefix]) => {
+        const select = page.querySelector(selector);
+        const selected = select?.options[select.selectedIndex];
+        if (select && selected) select.setLabel(`${prefix}: ${selected.text}`);
+    });
+}
+
 function setPeopleHeader(page, item) {
     if (item.MediaType == 'Audio' || item.Type == 'MusicAlbum' || item.MediaType == 'Book' || item.MediaType == 'Photo') {
         page.querySelector('#peopleHeader').innerHTML = globalize.translate('People');
@@ -786,13 +870,15 @@ function setPeopleHeader(page, item) {
 function renderNextUp(page, item, user) {
     const section = page.querySelector('.nextUpSection');
 
-    if (item.Type != 'Series') {
+    if (item.Type != 'Series' && item.Type != 'Season') {
         section.classList.add('hide');
         return;
     }
 
     ServerConnections.getApiClient(item.ServerId).getNextUpEpisodes({
-        SeriesId: item.Id,
+        // A season's Next Up list belongs to its parent series. Series items
+        // continue using their own id, preserving the existing behavior.
+        SeriesId: item.SeriesId || item.Id,
         UserId: user.Id,
         Fields: 'MediaSourceCount'
     }).then(function (result) {
@@ -842,6 +928,9 @@ function setInitialCollapsibleState(page, item, apiClient, context, user) {
 
     if (item.Type == 'Series') {
         renderSeriesSchedule(page, item);
+    }
+
+    if (item.Type == 'Series' || item.Type == 'Season') {
         renderNextUp(page, item, user);
     } else {
         page.querySelector('.nextUpSection').classList.add('hide');
@@ -931,6 +1020,7 @@ function renderOverview(page, item) {
 
                 // Grab the sibling element to control the expand state
                 const expandButton = overviewElemnt.parentElement.querySelector('.overview-expand');
+                const useClickableMovieOverview = layoutManager.tv && item.Type === 'Movie';
 
                 // Detect if we have overflow of text. Based on this StackOverflow answer
                 // https://stackoverflow.com/a/35157976
@@ -940,7 +1030,23 @@ function renderOverview(page, item) {
                     expandButton.classList.add('hide');
                 }
 
-                expandButton.addEventListener('click', toggleLineClamp.bind(null, overviewElemnt));
+                if (useClickableMovieOverview) {
+                    expandButton.classList.add('hide');
+                    overviewElemnt.classList.add('tvMovieOverviewToggle');
+                    overviewElemnt.setAttribute('tabindex', '0');
+                    overviewElemnt.addEventListener('click', (event) => {
+                        if (event.target.closest('a')) return;
+                        overviewElemnt.classList.toggle('detail-clamp-text');
+                    });
+                    overviewElemnt.addEventListener('keydown', (event) => {
+                        if (event.key === 'Enter' || event.key === ' ') {
+                            event.preventDefault();
+                            overviewElemnt.classList.toggle('detail-clamp-text');
+                        }
+                    });
+                } else {
+                    expandButton.addEventListener('click', toggleLineClamp.bind(null, overviewElemnt));
+                }
 
                 for (const anchor of overviewElemnt.querySelectorAll('a')) {
                     anchor.setAttribute('target', '_blank');
@@ -987,6 +1093,131 @@ function renderMiscInfo(page, item) {
     }
 }
 
+function renderTvEpisodeMeta(page, item) {
+    if (!layoutManager.tv || (item.Type !== 'Episode' && item.Type !== 'Movie')) return;
+
+    const miscInfo = page.querySelector('.itemMiscInfo-primary');
+    if (!miscInfo) return;
+
+    if (item.Type === 'Movie') {
+        // Mirror Android TV's movie information row instead of the web
+        // default of year, runtime, rating and critic score.
+        miscInfo.innerHTML = '';
+        const addItem = (text, className = '') => {
+            const element = document.createElement('div');
+            element.className = `mediaInfoItem ${className}`;
+            element.textContent = text;
+            miscInfo.appendChild(element);
+        };
+
+        if (item.CommunityRating != null) addItem(`★ ${item.CommunityRating.toFixed(1)}`, 'tvMovieCommunityRating');
+        if (item.CriticRating != null) addItem(`● ${item.CriticRating}`, 'tvMovieCriticRating');
+        if (item.PremiereDate) {
+            const premiere = datetime.parseISO8601Date(item.PremiereDate);
+            addItem(premiere.toLocaleDateString('en-US', { month: 'short', day: 'numeric', year: 'numeric' }), 'tvMovieDate');
+        }
+        if (item.RunTimeTicks) {
+            const totalSeconds = Math.floor(item.RunTimeTicks / 10000000);
+            const hours = Math.floor(totalSeconds / 3600);
+            const minutes = Math.floor((totalSeconds % 3600) / 60).toString().padStart(2, '0');
+            const seconds = (totalSeconds % 60).toString().padStart(2, '0');
+            addItem(`${hours}:${minutes}:${seconds}`, 'tvMovieRuntime');
+        }
+        if (item.OfficialRating) addItem(item.OfficialRating, 'tvMovieOfficialRating');
+    }
+
+    const existingItems = Array.from(miscInfo.children);
+    if (item.Type === 'Episode') {
+        existingItems[0]?.classList.add('tvEpisodeDate');
+        existingItems[1]?.classList.add('tvEpisodeRuntime');
+    }
+
+    if (item.Type === 'Episode' && item.ParentIndexNumber != null && item.IndexNumber != null) {
+        const episodeIndex = document.createElement('div');
+        episodeIndex.className = 'mediaInfoItem tvEpisodeIndex';
+        episodeIndex.textContent = `S${item.ParentIndexNumber}:E${item.IndexNumber}`;
+        miscInfo.appendChild(episodeIndex);
+    }
+
+    const mediaSource = item.MediaSources?.[0];
+    const videoStream = mediaSource?.MediaStreams?.find(stream => stream.Type === 'Video');
+    const audioStream = mediaSource?.MediaStreams?.find(stream => stream.Type === 'Audio');
+    const subtitleStreams = mediaSource?.MediaStreams?.filter(stream => stream.Type === 'Subtitle') || [];
+    const badges = [];
+
+    if (item.Type !== 'Movie' && item.OfficialRating) badges.push(item.OfficialRating);
+    if (subtitleStreams.some(stream => stream.IsHearingImpaired)) badges.push('SDH');
+    if (subtitleStreams.some(stream => !stream.IsHearingImpaired)) badges.push('CC');
+    if (videoStream?.Width >= 3840) badges.push('4K');
+
+    const videoRange = (videoStream?.VideoRangeType || '').toUpperCase();
+    if (videoRange.includes('DOVI')) badges.push('Dolby Vision');
+    if (videoRange.includes('HDR10PLUS') || videoRange.includes('HDR10_PLUS')) badges.push('HDR10+');
+    else if (videoRange.includes('HDR10')) badges.push('HDR10');
+    else if (videoRange.includes('HLG')) badges.push('HLG');
+    else if (videoRange === 'SDR') badges.push('SDR');
+
+    const audioCodec = (audioStream?.Codec || '').toUpperCase();
+    const audioProfile = audioStream?.Profile || '';
+    if (audioProfile.includes('Dolby Atmos')) badges.push(audioCodec === 'EAC3' ? 'DD+ Atmos' : 'Dolby Atmos');
+    else if (audioCodec === 'EAC3') badges.push('DD+');
+    else if (audioCodec === 'AC3') badges.push('DD');
+    else if (audioCodec === 'TRUEHD') badges.push('TrueHD');
+    else if (audioCodec === 'DCA') badges.push(audioStream?.Channels >= 8 ? 'DTS:X' : 'DTS');
+    else if (audioCodec) badges.push(audioCodec);
+
+    const channelLayout = audioStream?.ChannelLayout || ({ 2: '2.0', 6: '5.1', 8: '7.1' })[audioStream?.Channels];
+    if (channelLayout) badges.push(channelLayout);
+
+    if (badges.length) {
+        const badgeContainer = document.createElement('div');
+        badgeContainer.className = 'tvEpisodeBadges mediaInfoItem';
+        badgeContainer.innerHTML = badges.map(badge => `<span>${escapeHtml(badge)}</span>`).join('');
+        miscInfo.appendChild(badgeContainer);
+    }
+
+    // Android TV combines the rendered director credit and live end time.
+    // Metadata components mount after this legacy controller, so try now and
+    // once again on the next frame after their links are in the DOM.
+    const addDirectorLine = () => {
+        const detailsGroup = page.querySelector('.detailHeroMetadata .itemDetailsGroup') || page.querySelector('.itemDetailsGroup');
+        const directorMetadata = detailsGroup?.querySelector('.detailMetadata-Director');
+        if (!detailsGroup || !directorMetadata || detailsGroup.querySelector('.tvDirectorLine')) return;
+
+        const directors = Array.from(directorMetadata.querySelectorAll('.button-link'))
+            .map(link => link.textContent?.trim())
+            .filter(Boolean);
+        if (!directors.length) return;
+
+        directorMetadata.remove();
+        const directorLine = document.createElement('div');
+        directorLine.className = 'tvDirectorLine';
+        directorLine.append(`Directed by ${directors.join(', ')}`);
+
+        if (item.RunTimeTicks) {
+            const endTime = document.createElement('span');
+            endTime.className = 'tvEndsAt';
+            const refreshEndTime = () => {
+                endTime.textContent = `Ends ${mediaInfo.getEndsAtFromPosition(item.RunTimeTicks, item.UserData?.PlaybackPositionTicks, 1, false)}`;
+            };
+            refreshEndTime();
+            const endTimeTimer = setInterval(() => {
+                if (!document.body.contains(endTime)) clearInterval(endTimeTimer);
+                else refreshEndTime();
+            }, 15000);
+            const separator = document.createElement('span');
+            separator.className = 'tvCreditSeparator';
+            separator.textContent = '•';
+            directorLine.append(separator, endTime);
+        }
+
+        detailsGroup.appendChild(directorLine);
+    };
+
+    addDirectorLine();
+    requestAnimationFrame(addDirectorLine);
+}
+
 function renderTagline(page, item) {
     const taglineElement = page.querySelector('.tagline');
 
@@ -1015,6 +1246,7 @@ function renderDetails(page, instance, item, apiClient, context) {
 
         for (const type of metadataTypes) {
             const renderTarget = document.createElement('div');
+            renderTarget.className = `detailMetadata-${type}`;
             const unmountMethod = renderComponent(ItemDetailsMetadataList, { type, item, context: inferContext(item) }, renderTarget);
 
             instance._unmount.push(unmountMethod);
@@ -1030,6 +1262,7 @@ function renderDetails(page, instance, item, apiClient, context) {
     renderTagline(page, item);
     renderOverview(page, item);
     renderMiscInfo(page, item);
+    renderTvEpisodeMeta(page, item);
     reloadUserDataButtons(page, item);
     renderLyricsContainer(page, item, apiClient);
 
@@ -1088,31 +1321,51 @@ function renderMoreFromSeason(view, item, apiClient) {
         }
 
         const userId = apiClient.getCurrentUserId();
-        apiClient.getEpisodes(item.SeriesId, {
-            SeasonId: item.SeasonId,
-            UserId: userId,
-            Fields: 'ItemCounts,PrimaryImageAspectRatio,CanDelete,MediaSourceCount'
-        }).then(function (result) {
+        // Android TV queries the season from the current episode index onward.
+        // This excludes the episode being viewed and gives the rail its own
+        // episode thumbnails instead of inherited series artwork.
+        const episodeQuery = layoutManager.tv
+            ? apiClient.getItems(userId, {
+                ParentId: item.SeasonId,
+                IncludeItemTypes: 'Episode',
+                StartIndex: item.IndexNumber,
+                Limit: 20,
+                Fields: 'ItemCounts,PrimaryImageAspectRatio,CanDelete,MediaSourceCount'
+            })
+            : apiClient.getEpisodes(item.SeriesId, {
+                SeasonId: item.SeasonId,
+                UserId: userId,
+                Fields: 'ItemCounts,PrimaryImageAspectRatio,CanDelete,MediaSourceCount'
+            });
+
+        episodeQuery.then(function (result) {
             if (result.Items.length < 2) {
                 section.classList.add('hide');
                 return;
             }
 
             section.classList.remove('hide');
-            section.querySelector('h2').innerText = globalize.translate('MoreFromValue', item.SeasonName);
             const itemsContainer = section.querySelector('.itemsContainer');
             cardBuilder.buildCards(result.Items, {
                 parentContainer: section,
                 itemsContainer: itemsContainer,
-                shape: 'overflowBackdrop',
+                shape: layoutManager.tv ? 'backdrop' : 'overflowBackdrop',
                 sectionTitleTagName: 'h2',
                 scalable: true,
                 showTitle: true,
+                showParentTitle: layoutManager.tv,
+                preferThumb: layoutManager.tv,
+                inheritThumb: !layoutManager.tv,
                 overlayText: false,
                 centerText: true,
                 includeParentInfoInTitle: false,
                 allowBottomPadding: false
             });
+            // buildCards owns the card rail and may reset its section title,
+            // so assign the TV-specific label after it has rendered.
+            section.querySelector('h2').innerText = layoutManager.tv
+                ? globalize.translate('HeaderNextEpisode')
+                : globalize.translate('MoreFromValue', item.SeasonName);
             const card = itemsContainer.querySelector('.card[data-id="' + item.Id + '"]');
 
             if (card) {
@@ -1813,9 +2066,17 @@ function renderScenes(page, item) {
             chaptercardbuilder.buildChapterCards(item, chapters, {
                 itemsContainer: scenesContent,
                 backdropShape: 'overflowBackdrop',
-                squareShape: 'overflowSquare',
+                // Android TV always presents chapter thumbnails as 16:9 cards.
+                squareShape: 'overflowBackdrop',
                 imageBlurhashes: item.ImageBlurHashes
             });
+
+            // Detail sections can be revisited after a horizontal chapter
+            // scroll. Android always opens this row at chapter one.
+            const chapterScroller = scenesContent.closest('[is="emby-scroller"]');
+            if (chapterScroller) {
+                chapterScroller.scrollLeft = 0;
+            }
         });
     } else {
         page.querySelector('#scenesCollapsible').classList.add('hide');
@@ -2097,6 +2358,23 @@ export default function (view, params) {
     let currentItem;
     const self = this;
 
+    // The hero track chips are intentionally positioned to the left of the
+    // action row on TV. Keep the remote path explicit after moving them out
+    // of the normal detail-section focus container.
+    view.addEventListener('keydown', (event) => {
+        if (!layoutManager.tv || event.key !== 'ArrowLeft') return;
+        if (!event.target.closest('.mainDetailButtons [data-action="resume"]')) return;
+
+        const subtitleSelect = view.querySelector('.selectSubtitlesContainer:not(.hide) .selectSubtitles');
+        const audioSelect = view.querySelector('.selectAudioContainer:not(.hide) .selectAudio');
+        const target = subtitleSelect || audioSelect;
+        if (!target) return;
+
+        event.preventDefault();
+        event.stopPropagation();
+        focusManager.focus(target);
+    }, true);
+
     function init() {
         const apiClient = getApiClient();
 
@@ -2119,8 +2397,11 @@ export default function (view, params) {
             renderVideoSelections(view, self._currentPlaybackMediaSources);
             renderAudioSelections(view, self._currentPlaybackMediaSources);
             renderSubtitleSelections(view, self._currentPlaybackMediaSources);
+            updateTvTrackLabels(view);
             refreshSelectedVersion();
         });
+        view.querySelector('.selectAudio').addEventListener('change', () => updateTvTrackLabels(view));
+        view.querySelector('.selectSubtitles').addEventListener('change', () => updateTvTrackLabels(view));
         view.addEventListener('viewshow', function (e) {
             const page = this;
 
@@ -2151,6 +2432,7 @@ export default function (view, params) {
             self._unsubscribeUserData = null;
             Events.off(playbackManager, 'playerchange', onPlayerChange);
             libraryMenu.setTransparentMenu(false);
+            document.body.classList.remove('lumafin-detail-backdrop');
         });
         view.addEventListener('viewdestroy', function () {
             unmount(self);

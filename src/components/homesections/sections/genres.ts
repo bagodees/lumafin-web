@@ -2,11 +2,14 @@ import { BaseItemKind } from '@jellyfin/sdk/lib/generated-client/models/base-ite
 import type { BaseItemDto } from '@jellyfin/sdk/lib/generated-client/models/base-item-dto';
 import { ItemFields } from '@jellyfin/sdk/lib/generated-client/models/item-fields';
 import { ItemSortBy } from '@jellyfin/sdk/lib/generated-client/models/item-sort-by';
+import { SortOrder } from '@jellyfin/sdk/lib/generated-client/models/sort-order';
 import type { ApiClient } from 'jellyfin-apiclient';
+import escapeHtml from 'escape-html';
 import { getGenreApi } from '@jellyfin/sdk/lib/utils/api/genre-api';
 import { getLibraryApi } from '@jellyfin/sdk/lib/utils/api/library-api';
 
 import cardBuilder from 'components/cardbuilder/cardBuilder';
+import layoutManager from 'components/layoutManager';
 import { getBackdropShape } from 'components/cardbuilder/utils/shape';
 import globalize from 'lib/globalize';
 import ServerConnections from 'lib/jellyfin-apiclient/ServerConnections';
@@ -20,6 +23,11 @@ export function loadGenres(
     apiClient: ApiClient,
     options: SectionOptions
 ) {
+    if (layoutManager.tv) {
+        loadTvGenreCollages(elem, apiClient);
+        return;
+    }
+
     let html = '';
 
     html += '<h2 class="sectionTitle sectionTitle-cards padded-left">' + globalize.translate('Genres') + '</h2>';
@@ -118,4 +126,112 @@ export function loadGenres(
         context: 'home'
     });
     itemsContainer.parentContainer = elem;
+}
+
+/**
+ * Android TV's Genres row is intentionally not a normal poster row. Each
+ * genre is represented by the four highest-rated movies in a 2 × 2 collage.
+ * Keep that request and rendering local to TV rather than changing the
+ * browser/mobile genre cards.
+ */
+function loadTvGenreCollages(elem: HTMLElement, apiClient: ApiClient) {
+    elem.classList.add('hide');
+    elem.innerHTML = [
+        '<h2 class="sectionTitle sectionTitle-cards padded-left">', globalize.translate('Genres'), '</h2>',
+        '<div is="emby-scroller" class="padded-top-focusscale padded-bottom-focusscale" data-centerfocus="true">',
+        '<div is="emby-itemscontainer" class="itemsContainer scrollSlider genreCollageRow focuscontainer-x"></div>',
+        '</div>'
+    ].join('');
+
+    const row = elem.querySelector<HTMLElement>('.genreCollageRow');
+    if (!row) return;
+
+    const load = async () => {
+        const api = ServerConnections.getApi(apiClient.serverId());
+        const userId = apiClient.getCurrentUserId();
+        const genresParams = {
+            userId,
+            includeItemTypes: [ BaseItemKind.Movie ],
+            sortBy: [ ItemSortBy.SortName ],
+            sortOrder: [ SortOrder.Ascending ],
+            enableTotalRecordCount: false
+        };
+
+        const genresResult = await queryClient.fetchQuery({
+            queryKey: [ 'User', userId, 'TvHomeGenreCollages', genresParams ],
+            queryFn: () => getGenreApi(api!).getGenres(genresParams).then(r => r.data)
+        });
+
+        const genres = (genresResult.Items || []).filter(genre => genre.Id && genre.Name);
+        const collages = await Promise.all(genres.map(async (genre) => {
+            const itemsParams = {
+                userId,
+                genreIds: [ genre.Id! ],
+                includeItemTypes: [ BaseItemKind.Movie ],
+                recursive: true,
+                sortBy: [ ItemSortBy.CommunityRating ],
+                sortOrder: [ SortOrder.Descending ],
+                imageTypeLimit: 1,
+                limit: 4,
+                enableTotalRecordCount: false
+            };
+            const result = await queryClient.fetchQuery({
+                queryKey: [ 'User', userId, 'TvHomeGenreCollageItems', itemsParams ],
+                queryFn: () => getLibraryApi(api!).getItems(itemsParams).then(r => r.data)
+            });
+            const images = (result.Items || []).map((item) => {
+                const tag = item.ImageTags?.Primary;
+                return item.Id && tag ? apiClient.getScaledImageUrl(item.Id, {
+                    type: 'Primary',
+                    tag,
+                    maxWidth: 300,
+                    maxHeight: 300,
+                    quality: 90
+                }) : '';
+            });
+
+            return { id: genre.Id!, name: genre.Name!, images };
+        }));
+
+        row.innerHTML = collages.map((genre, genreIndex) => {
+            const href = '#/list?type=Movie&genreId='
+                + encodeURIComponent(genre.id)
+                + '&serverId=' + encodeURIComponent(apiClient.serverId())
+                + '&sortBy=' + ItemSortBy.CommunityRating + '&sortOrder=' + SortOrder.Descending;
+            return '<a is="emby-linkbutton" class="card genreCollageTile" href="'
+                + href + '" data-genre-index="' + genreIndex + '">'
+                + '<span class="genreCollageGrid" aria-hidden="true"><span></span><span></span><span></span><span></span></span>'
+                + '<span class="genreCollageName">' + escapeHtml(genre.name) + '</span></a>';
+        }).join('');
+
+        // Unlike the regular card rows, these tiles are inserted after the
+        // scroller has already mounted. Recalculate its slide width now so
+        // remote navigation moves this rail rather than the whole page.
+        const scroller = elem.querySelector<HTMLElement & {
+            scroller?: { reload: () => void };
+            toCenter?: (target: HTMLElement, immediate?: boolean) => void;
+        }>('[is="emby-scroller"]');
+        requestAnimationFrame(() => scroller?.scroller?.reload());
+
+        row.querySelectorAll<HTMLElement>('.genreCollageTile').forEach((tile) => {
+            const genre = collages[Number(tile.dataset.genreIndex)];
+            tile.querySelectorAll<HTMLElement>('.genreCollageGrid > span').forEach((cell, imageIndex) => {
+                const image = genre.images[imageIndex];
+                if (image) cell.style.backgroundImage = `url("${image}")`;
+            });
+            // Leanback's ListRow recenters after the focused child has been
+            // laid out. Do the equivalent after this custom tile's focus has
+            // settled; otherwise the web scroller calculates against its old
+            // position and leaves the selected tile at the screen edge.
+            tile.addEventListener('focus', () => {
+                requestAnimationFrame(() => scroller?.toCenter?.(tile, false));
+            });
+        });
+
+        elem.classList.toggle('hide', collages.length === 0);
+    };
+
+    void load().catch(() => {
+        elem.classList.add('hide');
+    });
 }
