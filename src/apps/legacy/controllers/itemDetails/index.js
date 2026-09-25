@@ -816,7 +816,13 @@ function arrangeTvHero(page, item) {
     // Keep the overview with the title and metadata on TV, before the action
     // buttons. The desktop/mobile DOM order remains untouched.
     if (overview) {
-        heroOverview.replaceChildren(overview);
+        // Tizen 6.5's browser does not implement replaceChildren(). An
+        // exception here prevented the rest of the detail setup from running,
+        // including the code that exposes the Play button.
+        while (heroOverview.firstChild) {
+            heroOverview.removeChild(heroOverview.firstChild);
+        }
+        heroOverview.appendChild(overview);
         if (overviewControls) heroOverview.appendChild(overviewControls);
     }
     if (heroTracks && trackSelections) heroTracks.appendChild(trackSelections);
