@@ -168,12 +168,18 @@ async function loadPlugins() {
         list = list.concat(window.NativeShell.getPlugins());
     }
 
-    try {
-        await Promise.all(list.map(plugin => pluginManager.loadPlugin(plugin)));
-        console.debug('finished loading plugins');
-    } catch (e) {
-        console.warn('failed loading plugins', e);
-    }
+    // A failed optional plugin must not let startup race ahead of the media
+    // players that are still loading. On slower TVs that race left detail
+    // pages without a Play action, even though the HTML video player became
+    // available moments later.
+    await Promise.all(list.map(async (plugin) => {
+        try {
+            await pluginManager.loadPlugin(plugin);
+        } catch (e) {
+            console.warn(`failed loading plugin: ${plugin}`, e);
+        }
+    }));
+    console.debug('finished loading plugins');
 
     console.groupEnd('loading installed plugins');
 }
